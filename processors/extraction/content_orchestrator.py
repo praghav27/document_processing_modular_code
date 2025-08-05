@@ -1,7 +1,10 @@
 import os
 from typing import Dict, List
 from storage.local_storage import LocalStorage
-from llm_metadata.metadata_extractor import DocumentMetadataExtractor
+# from llm_metadata.metadata_extractor import DocumentMetadataExtractor
+from llm_metadata.power_extractor import DocumentMetadataExtractor
+from llm_metadata.rfi_extractor import RFIMetadataExtractor
+from llm_metadata.document_type_detector import DocumentTypeDetector
 from .text_extractor import TextExtractor
 from .table_extractor import TableExtractor
 from .image_extractor import ImageExtractor
