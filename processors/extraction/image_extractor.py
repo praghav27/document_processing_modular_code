@@ -2,7 +2,8 @@ import os
 import uuid
 from datetime import datetime
 from typing import List, Dict
-from storage.local_storage import LocalStorage
+# from storage.local_storage import LocalStorage
+from storage.analysis_storage import LocalStorage
 from processors.content_verbalizer import ContentVerbalizer
 
 

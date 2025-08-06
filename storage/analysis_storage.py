@@ -1,17 +1,21 @@
 import os
 import json
 import pandas as pd
-import base64
-from PIL import Image
-from io import BytesIO
 from config import TABLES_DIR, IMAGES_DIR, TEXT_DIR
 from typing import List, Dict
+from .text_storage import TextStorage
+from .table_storage import TableStorage
+from .image_storage import ImageStorage
+
 
 class LocalStorage:
-    """Handle local storage of extracted content with enhanced chunking, verbalization, and LLM metadata support"""
+    """Main coordinator for all storage operations with analysis and reporting capabilities"""
     
     def __init__(self):
         self._ensure_directories()
+        self.text_storage = TextStorage()
+        self.table_storage = TableStorage()
+        self.image_storage = ImageStorage()
     
     def _ensure_directories(self):
         """Create storage directories if they don't exist"""
@@ -19,125 +23,37 @@ class LocalStorage:
         os.makedirs(IMAGES_DIR, exist_ok=True)
         os.makedirs(TEXT_DIR, exist_ok=True)
     
-    def save_table(self, df: pd.DataFrame, filename: str, table_index: int) -> str:
-        """Save table as CSV file"""
-        csv_filename = f"{filename}_table_{table_index}.csv"
-        csv_path = os.path.join(TABLES_DIR, csv_filename)
-        df.to_csv(csv_path, index=False)
-        print(f"💾 Saved table {table_index}: {csv_path}")
-        return csv_path
-    
-    def save_figure_image_bytes(self, image_bytes: bytes, filename: str, figure_index: int) -> str:
-        """Save figure image from raw bytes data"""
-        try:
-            img_filename = f"{filename}_figure_{figure_index}.png"
-            img_path = os.path.join(IMAGES_DIR, img_filename)
-            
-            # Try to open with PIL to validate and convert to PNG
-            try:
-                img = Image.open(BytesIO(image_bytes))
-                img.save(img_path, "PNG")
-                print(f"💾 Saved figure image: {img_path}")
-            except Exception:
-                # If PIL fails, save raw bytes
-                with open(img_path, 'wb') as f:
-                    f.write(image_bytes)
-                print(f"💾 Saved raw image bytes: {img_path}")
-            
-            return img_path
-        except Exception as e:
-            print(f"❌ Error saving figure image {figure_index}: {e}")
-            return None
-    
-    def save_figure_text(self, text_content: str, filename: str, figure_index: int) -> str:
-        """Save figure text content"""
-        txt_filename = f"{filename}_figure_{figure_index}.txt"
-        txt_path = os.path.join(IMAGES_DIR, txt_filename)
-        
-        with open(txt_path, 'w', encoding='utf-8') as f:
-            f.write(text_content)
-        
-        print(f"💾 Saved figure text: {txt_path}")
-        return txt_path
-    
+    # Delegate text operations to TextStorage
     def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> str:
-        """Save enhanced text chunks with verbalization and LLM metadata as JSON file"""
-        json_filename = f"{filename}_text_chunks.json"
-        json_path = os.path.join(TEXT_DIR, json_filename)
-        
-        # Extract LLM metadata from chunks if available
-        llm_metadata = {}
-        if text_chunks and text_chunks[0].get('metadata', {}).get('llm_extracted_metadata'):
-            llm_metadata = text_chunks[0]['metadata']['llm_extracted_metadata']
-        
-        # Convert chunks to serializable format with enhanced metadata including LLM data
-        chunk_data = {
-            "filename": filename,
-            "total_chunks": len(text_chunks),
-            "processing_method": "enhanced_chunking_with_verbalization_and_llm_metadata",
-            "llm_extracted_metadata": llm_metadata,  # NEW: Store LLM metadata at document level
-            "chunk_types": {
-                "text": len([c for c in text_chunks if c['content_type'] == 'text']),
-                "table": len([c for c in text_chunks if c['content_type'] == 'table']),
-                "image": len([c for c in text_chunks if c['content_type'] == 'image'])
-            },
-            "created_at": text_chunks[0].get("metadata", {}).get("created_at", "") if text_chunks else "",
-            "chunks": []
-        }
-        
-        for chunk in text_chunks:
-            chunk_info = {
-                "chunk_id": chunk.get("chunk_id", ""),
-                "file_name": chunk.get("file_name", ""),
-                "section_name": chunk.get("section_name", ""),
-                "section_no": chunk.get("section_no", ""),
-                "domain": chunk.get("domain", ""),
-                "content_type": chunk.get("content_type", "text"),
-                "author": chunk.get("author", ""),  # Now includes LLM-extracted vendor_name
-                "content": chunk.get("content", ""),
-                "verbalized_content": chunk.get("verbalized_content", ""),
-                "metadata": chunk.get("metadata", {})
-            }
-            chunk_data["chunks"].append(chunk_info)
-        
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(chunk_data, f, indent=2, ensure_ascii=False)
-        
-        print(f"💾 Saved enhanced text chunks with LLM metadata: {json_path}")
-        print(f"   📊 Chunk breakdown: {chunk_data['chunk_types']['text']} text, {chunk_data['chunk_types']['table']} table, {chunk_data['chunk_types']['image']} image")
-        if llm_metadata:
-            print(f"   🤖 LLM Metadata: Project='{llm_metadata.get('project_title', 'N/A')[:30]}...', Vendor='{llm_metadata.get('vendor_name', 'N/A')}', Domain='{llm_metadata.get('domain_category', 'N/A')}'")
-        return json_path
+        return self.text_storage.save_text_chunks(text_chunks, filename)
     
     def save_raw_text(self, raw_text: str, filename: str) -> str:
-        """Save raw extracted text"""
-        txt_filename = f"{filename}_raw_text.txt"
-        txt_path = os.path.join(TEXT_DIR, txt_filename)
-        
-        with open(txt_path, 'w', encoding='utf-8') as f:
-            f.write(raw_text)
-        
-        print(f"💾 Saved raw text: {txt_path}")
-        return txt_path
+        return self.text_storage.save_raw_text(raw_text, filename)
     
     def save_document_metadata(self, metadata: Dict, filename: str) -> str:
-        """Save LLM-extracted document metadata separately"""
-        metadata_filename = f"{filename}_llm_metadata.json"
-        metadata_path = os.path.join(TEXT_DIR, metadata_filename)
-        
-        metadata_data = {
-            "filename": filename,
-            "extraction_method": "llm_azure_openai",
-            "extracted_metadata": metadata,
-            "created_at": pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        
-        with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(metadata_data, f, indent=2, ensure_ascii=False)
-        
-        print(f"💾 Saved LLM-extracted document metadata: {metadata_path}")
-        return metadata_path
+        return self.text_storage.save_document_metadata(metadata, filename)
     
+    def load_text_chunks(self, filename: str) -> List[Dict]:
+        return self.text_storage.load_text_chunks(filename)
+    
+    def load_document_metadata(self, filename: str) -> Dict:
+        return self.text_storage.load_document_metadata(filename)
+    
+    def load_raw_text(self, filename: str) -> str:
+        return self.text_storage.load_raw_text(filename)
+    
+    # Delegate table operations to TableStorage
+    def save_table(self, df: pd.DataFrame, filename: str, table_index: int) -> str:
+        return self.table_storage.save_table(df, filename, table_index)
+    
+    # Delegate image operations to ImageStorage
+    def save_figure_image_bytes(self, image_bytes: bytes, filename: str, figure_index: int) -> str:
+        return self.image_storage.save_figure_image_bytes(image_bytes, filename, figure_index)
+    
+    def save_figure_text(self, text_content: str, filename: str, figure_index: int) -> str:
+        return self.image_storage.save_figure_text(text_content, filename, figure_index)
+    
+    # Analysis and reporting methods
     def save_extraction_summary(self, filename: str, summary_data: Dict) -> str:
         """Save extraction summary with all content types, verbalization, and LLM metadata info"""
         summary_filename = f"{filename}_extraction_summary.json"
@@ -166,59 +82,6 @@ class LocalStorage:
         
         print(f"💾 Saved section analysis: {sections_path}")
         return sections_path
-    
-    def load_text_chunks(self, filename: str) -> List[Dict]:
-        """Load enhanced text chunks with verbalization and LLM metadata from JSON file"""
-        json_filename = f"{filename}_text_chunks.json"
-        json_path = os.path.join(TEXT_DIR, json_filename)
-        
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            chunks = data.get("chunks", [])
-            
-            # Ensure backward compatibility - add missing fields if needed
-            for chunk in chunks:
-                if "verbalized_content" not in chunk:
-                    chunk["verbalized_content"] = chunk.get("content", "")
-                # Ensure LLM metadata is present in chunk metadata
-                if "metadata" in chunk and "llm_extracted_metadata" not in chunk["metadata"]:
-                    chunk["metadata"]["llm_extracted_metadata"] = data.get("llm_extracted_metadata", {})
-            
-            print(f"📂 Loaded {len(chunks)} chunks with LLM metadata and verbalization support")
-            if data.get("llm_extracted_metadata"):
-                print(f"   🤖 Document metadata: {data['llm_extracted_metadata'].get('project_title', 'N/A')}")
-            return chunks
-            
-        except Exception as e:
-            print(f"❌ Error loading text chunks: {e}")
-            return []
-    
-    def load_document_metadata(self, filename: str) -> Dict:
-        """Load LLM-extracted document metadata"""
-        metadata_filename = f"{filename}_llm_metadata.json"
-        metadata_path = os.path.join(TEXT_DIR, metadata_filename)
-        
-        try:
-            with open(metadata_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data.get("extracted_metadata", {})
-        except Exception as e:
-            print(f"❌ Error loading document metadata: {e}")
-            return {}
-    
-    def load_raw_text(self, filename: str) -> str:
-        """Load raw text from file"""
-        txt_filename = f"{filename}_raw_text.txt"
-        txt_path = os.path.join(TEXT_DIR, txt_filename)
-        
-        try:
-            with open(txt_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        except Exception as e:
-            print(f"❌ Error loading raw text: {e}")
-            return ""
     
     def load_extraction_summary(self, filename: str) -> Dict:
         """Load extraction summary"""
@@ -306,33 +169,6 @@ class LocalStorage:
         summary["storage_stats"]["total_size_mb"] = round(summary["storage_stats"]["total_size_mb"], 2)
         
         return summary
-    
-    def _get_file_type(self, filename: str) -> str:
-        """Determine file type from filename"""
-        if filename.endswith('.json'):
-            if 'chunks' in filename:
-                return 'text_chunks_with_llm_metadata'
-            elif 'llm_metadata' in filename:
-                return 'llm_extracted_metadata'
-            elif 'summary' in filename:
-                return 'extraction_summary'
-            elif 'analysis' in filename:
-                return 'section_analysis'
-            else:
-                return 'json_data'
-        elif filename.endswith('.txt'):
-            if 'raw_text' in filename:
-                return 'raw_text'
-            elif 'figure' in filename:
-                return 'figure_text'
-            else:
-                return 'text_file'
-        elif filename.endswith('.csv'):
-            return 'table_data'
-        elif filename.endswith(('.png', '.jpg', '.jpeg')):
-            return 'figure_image'
-        else:
-            return 'unknown'
     
     def create_comprehensive_report(self, filename: str) -> Dict:
         """Create a comprehensive report of all extracted content with LLM metadata and verbalization"""
@@ -532,3 +368,30 @@ class LocalStorage:
                     stats["chunk_integration"][content_type]["with_metadata"] += 1
         
         return stats
+    
+    def _get_file_type(self, filename: str) -> str:
+        """Determine file type from filename"""
+        if filename.endswith('.json'):
+            if 'chunks' in filename:
+                return 'text_chunks_with_llm_metadata'
+            elif 'llm_metadata' in filename:
+                return 'llm_extracted_metadata'
+            elif 'summary' in filename:
+                return 'extraction_summary'
+            elif 'analysis' in filename:
+                return 'section_analysis'
+            else:
+                return 'json_data'
+        elif filename.endswith('.txt'):
+            if 'raw_text' in filename:
+                return 'raw_text'
+            elif 'figure' in filename:
+                return 'figure_text'
+            else:
+                return 'text_file'
+        elif filename.endswith('.csv'):
+            return 'table_data'
+        elif filename.endswith(('.png', '.jpg', '.jpeg')):
+            return 'figure_image'
+        else:
+            return 'unknown'

@@ -1,6 +1,7 @@
 import os
 from typing import Dict, List
-from storage.local_storage import LocalStorage
+# from storage.local_storage import LocalStorage
+from storage.analysis_storage import LocalStorage
 # from llm_metadata.power_extractor import DocumentMetadataExtractor
 # from llm_metadata.rfi_extractor import RFIMetadataExtractor
 # from llm_metadata.document_type_detector import DocumentTypeDetector
