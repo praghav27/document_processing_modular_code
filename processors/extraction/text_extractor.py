@@ -11,10 +11,11 @@ class SimpleChunker:
         self.section_patterns = {
             'section_heading': r'\[ParagraphRole\.SECTION_HEADING\]',
             'numbered_section': r'^\s*(\d+\.\d+)\s+([A-Z\s]+)',
-            'cleanup_tags': r'\[None\]\s*|\[ParagraphRole\.[^\]]+\]'
+            'cleanup_tags': r'\[None\]\s*|\[ParagraphRole\.[^\]]+\]',
+            'page_footer': r'\[ParagraphRole\.PAGE_FOOTER\]\s*([^\[]+)'
         }
     
-    def chunk_text(self, text: str, document_metadata: Dict = None) -> List[Dict]:
+    def chunk_text(self, text: str, document_metadata: Dict = None, rfp_id: str = None) -> List[Dict]:
         """Create chunks from text with enhanced section detection and document metadata integration"""
         print(f"DEBUG: Input text length: {len(text)}")
         print(f"DEBUG: First 200 chars: {repr(text[:200])}")
@@ -37,7 +38,7 @@ class SimpleChunker:
                 # Clean the section after splitting
                 cleaned_section = self._clean_text(section)
                 if cleaned_section.strip():  # Check again after cleaning
-                    chunk = self._create_chunk(cleaned_section, idx, document_metadata)
+                    chunk = self._create_chunk(cleaned_section, idx, document_metadata,rfp_id)
                     chunks.append(chunk)
                     print(f"DEBUG: Created chunk {idx + 1} with {len(cleaned_section)} chars")
                 else:
@@ -129,7 +130,7 @@ class SimpleChunker:
             'section_name': first_meaningful_line[:50] if first_meaningful_line else 'UNKNOWN_SECTION'
         }
     
-    def _create_chunk(self, content: str, idx: int, document_metadata: Dict = None) -> Dict:
+    def _create_chunk(self, content: str, idx: int, document_metadata: Dict = None,rfp_id:str=None) -> Dict:
         """Create chunk with comprehensive metadata including LLM-extracted document metadata"""
         section_info = self._extract_section_info(content)
         
@@ -163,7 +164,8 @@ class SimpleChunker:
             'content_type': 'text',
             'author': vendor_name,  # Now uses LLM-extracted vendor_name instead of 'tetratech'
             'content': content,
-            'verbalized_content': content,  # Same as content for text chunks
+            'verbalized_content': '',
+            'rfp_id':rfp_id,  #kept empty for now or we can keep it as same as content
             'metadata': {
                 'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'chunk_index': idx,
@@ -273,8 +275,24 @@ class TextExtractor:
                         "position": position_info
                     })
         print(f"📋 Extracted {len(text_elements)} text elements from paragraphs")
+        print(text_elements)
         return text_elements
     
+    def extract_rfp_id_from_text(self, text: str) -> str:
+        """
+        Extract RFP ID from page footer using regex.
+        Returns the first matching footer content, or 'unknown_rfp' if not found.
+        """
+        # Use the same pattern as in SimpleChunker
+        page_footer_pattern = r'\[ParagraphRole\.PAGE_FOOTER\]\s*([^\[]+)'
+        matches = re.findall(page_footer_pattern, text)
+        if matches:
+            rfp_id = matches[0].strip()
+            print(f"✅ Found RFP ID in footer using regex: '{rfp_id}'")
+            return rfp_id
+        print(f"⚠️ No RFP ID found in footer using regex - using default RFP ID")
+        return 'unknown_rfp'
+
     def create_text_chunks_with_simple_chunker(self, text_elements: List[Dict], document_metadata: Dict) -> List[Dict]:
         """Create text chunks using the sophisticated SimpleChunker with LLM metadata"""
         # Create all text content with role tags (like previous code)
@@ -298,14 +316,12 @@ class TextExtractor:
                 print("-" * 40)
         
         # Advanced chunking with debugging and LLM metadata
+        rfp_id = self.extract_rfp_id_from_text(all_text)
         chunker = SimpleChunker()
-        
-        # For debugging, first analyze the text
+        chunks = chunker.chunk_text(all_text, document_metadata, rfp_id=rfp_id)
         chunker.debug_text_analysis(all_text)
-        
-        # Then create chunks with LLM metadata
-        chunks = chunker.chunk_text(all_text, document_metadata)  # Pass LLM metadata
         chunker.print_chunks(chunks)
+        return chunks
         
         return chunks
     

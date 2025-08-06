@@ -1,3 +1,4 @@
+
 import os
 import base64
 from typing import Dict, Optional
@@ -8,18 +9,34 @@ from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API
 from openai import AzureOpenAI
 
 class ContentVerbalizer:
-    """Handle verbalization of tables and images using Azure OpenAI"""
+    """Handle verbalization of tables and images using Azure OpenAI - SINGLETON PATTERN"""
+    
+    _instance = None
+    _client = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
     
     def __init__(self):
-        """Initialize the verbalizer with Azure OpenAI"""
-        self.client = None
-        self._initialize_azure_openai_client()
+        """Initialize the verbalizer with Azure OpenAI - ONLY ONCE, SILENTLY REUSE"""
+        if not ContentVerbalizer._initialized:
+            self._initialize_azure_openai_client()
+            ContentVerbalizer._initialized = True
+        # NO print statements for subsequent initializations - silent reuse
+    
+    @property
+    def client(self):
+        """Get the shared Azure OpenAI client"""
+        return ContentVerbalizer._client
     
     def _initialize_azure_openai_client(self):
-        """Initialize the Azure OpenAI client"""
+        """Initialize the Azure OpenAI client - ONLY ONCE"""
         try:
             if AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT:
-                self.client = AzureOpenAI(
+                ContentVerbalizer._client = AzureOpenAI(
                     api_key=AZURE_OPENAI_API_KEY,
                     api_version=AZURE_OPENAI_API_VERSION,
                     azure_endpoint=AZURE_OPENAI_ENDPOINT
@@ -33,7 +50,7 @@ class ContentVerbalizer:
                 
         except Exception as e:
             print(f"❌ Error initializing Azure OpenAI client: {e}")
-            self.client = None
+            ContentVerbalizer._client = None
     
     def verbalize_table(self, table_data: Dict) -> str:
         """

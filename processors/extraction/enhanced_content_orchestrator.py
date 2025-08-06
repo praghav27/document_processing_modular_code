@@ -1,8 +1,9 @@
 import os
 from typing import Dict, List
 from storage.local_storage import LocalStorage
-from llm_metadata.power_extractor import PowerMetadataExtractor
-from llm_metadata.rfi_extractor import RFIMetadataExtractor
+# from llm_metadata.power_extractor import PowerMetadataExtractor
+# from llm_metadata.rfi_extractor import RFIMetadataExtractor
+from llm_metadata import RFIExtractor, RFPExtractor
 from llm_metadata.document_type_detector import DocumentTypeDetector
 from .text_extractor import TextExtractor  # Use existing file
 from .table_extractor import TableExtractor  # Use existing file
@@ -51,12 +52,14 @@ class ContentExtractor:
         # NEW: Step 1.5 - Extract document metadata using appropriate extractor
         if self.document_type == "RFI":
             print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
-            rfi_extractor = RFIMetadataExtractor()
+            rfi_extractor = RFIExtractor()
+            #  rfi_extractor = RFIMetadataExtractor()
             self.document_metadata = rfi_extractor.extract_metadata(self.text_elements)
             print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
         else:
             print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
-            rfp_extractor = PowerMetadataExtractor()
+            rfp_extractor = RFPExtractor()
+            # rfp_extractor = PowerMetadataExtractor()
             self.document_metadata = rfp_extractor.extract_metadata(self.text_elements)
             print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
         

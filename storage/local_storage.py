@@ -96,6 +96,7 @@ class LocalStorage:
                 "author": chunk.get("author", ""),  # Now includes LLM-extracted vendor_name
                 "content": chunk.get("content", ""),
                 "verbalized_content": chunk.get("verbalized_content", ""),
+                'rfp_id': chunk.get("rfp_id", ""),
                 "metadata": chunk.get("metadata", {})
             }
             chunk_data["chunks"].append(chunk_info)

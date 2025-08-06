@@ -1,9 +1,10 @@
 import os
 from typing import Dict, List
 from storage.local_storage import LocalStorage
-# from llm_metadata.metadata_extractor import DocumentMetadataExtractor
-from llm_metadata.power_extractor import DocumentMetadataExtractor
-from llm_metadata.rfi_extractor import RFIMetadataExtractor
+# from llm_metadata.power_extractor import DocumentMetadataExtractor
+# from llm_metadata.rfi_extractor import RFIMetadataExtractor
+# from llm_metadata.document_type_detector import DocumentTypeDetector
+from llm_metadata import RFIExtractor, RFPExtractor
 from llm_metadata.document_type_detector import DocumentTypeDetector
 from .text_extractor import TextExtractor
 from .table_extractor import TableExtractor
@@ -19,7 +20,8 @@ class ContentExtractor:
         self.text_elements = []  # Store for section association
         self.text_chunks = []  # Store text chunks for section mapping
         self.document_metadata = {}  # Store LLM-extracted document metadata
-        self.metadata_extractor = DocumentMetadataExtractor()  # LLM metadata extractor
+        # self.metadata_extractor = DocumentMetadataExtractor()  # LLM metadata extractor
+        self.document_type_detector = DocumentTypeDetector()
         
         # Initialize modular extractors
         self.text_extractor = TextExtractor()
@@ -40,9 +42,25 @@ class ContentExtractor:
         print(f"📋 Text elements extracted: {len(self.text_elements)}")
         
         # NEW: Extract document metadata from first 2 pages using LLM
-        print(f"🤖 Step 1.5: Extracting document metadata using LLM from first 2 pages...")
-        self.document_metadata = self.metadata_extractor.extract_document_metadata(self.text_elements)
-        print(f"📋 Document metadata extracted: {len(self.document_metadata)} fields")
+        # print(f"🤖 Step 1.5: Extracting document metadata using LLM from first 2 pages...")
+        # self.document_metadata = self.metadata_extractor.extract_document_metadata(self.text_elements)
+        # print(f"📋 Document metadata extracted: {len(self.document_metadata)} fields")
+        print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
+        detection_result = self.document_type_detector.detect_document_type(self.text_elements)
+        self.document_type_detector.print_detection_summary(detection_result)
+        doc_type = detection_result['document_type']
+
+        print(f"🤖 Step 1.5: Extracting {doc_type} metadata using LLM from complete document...")
+        
+        if doc_type == "RFI":
+            extractor = RFIExtractor()
+            self.document_metadata = extractor.extract_metadata(self.text_elements)  # 8 fields
+            print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
+        else:  # RFP or any other document type defaults to RFP
+            extractor = RFPExtractor()
+            self.document_metadata = extractor.extract_metadata(self.text_elements)  # 11 fields  
+            print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+
         
         print(f"📋 Step 2: Creating text chunks with LLM metadata using SimpleChunker...")
         self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
