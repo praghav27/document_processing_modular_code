@@ -42,6 +42,10 @@ class ContentExtractor:
         print(f"📋 Step 1: Extracting text elements...")
         self.text_elements = self.text_extractor.extract_text(result)
         print(f"📋 Text elements extracted: {len(self.text_elements)}")
+
+        all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
+        rfp_id = self.text_extractor.extract_rfp_id_from_text(all_text)
+        print(f"🔑 Extracted RFP ID for all chunks: {rfp_id}")
         
         # NEW: Step 1.2 - Detect document type (RFI vs RFP)
         print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
@@ -80,12 +84,12 @@ class ContentExtractor:
         # Create table chunks with verbalization, section mapping, and LLM metadata
         print(f"🤖 Creating table chunks with verbalization, section mapping, and LLM metadata...")
         # ✅ Pass section_mapper to existing table_extractor
-        table_chunks = self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements)
+        table_chunks = self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements,rfp_id=rfp_id)
         
         # Create image chunks with verbalization, section mapping, and LLM metadata
         print(f"🤖 Creating image chunks with verbalization, section mapping, and LLM metadata...")
         # ✅ Pass section_mapper to existing image_extractor
-        image_chunks = self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements)
+        image_chunks = self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements,rfp_id=rfp_id)
         
         # Combine all chunks
         all_chunks = self.text_chunks + table_chunks + image_chunks

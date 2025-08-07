@@ -47,7 +47,7 @@ class TableExtractor:
         
         return tables
     
-    def create_table_chunks(self, tables: List[Dict], base_filename: str, document_metadata: Dict, section_mapper, text_elements: List[Dict]) -> List[Dict]:
+    def create_table_chunks(self, tables: List[Dict], base_filename: str, document_metadata: Dict, section_mapper, text_elements: List[Dict], rfp_id: str = None) -> List[Dict]:
         """Create chunks for tables with verbalization, section mapping, and LLM metadata"""
         table_chunks = []
         
@@ -88,7 +88,8 @@ class TableExtractor:
                     'content_type': 'table',
                     'author': vendor_name,                             # From LLM extraction (vendor_name)
                     'content': table.get('content', ''),
-                    'verbalized_content': verbalized_content,  # AI-generated description
+                    'verbalized_content': verbalized_content,
+                    'rfp_id':rfp_id,  # AI-generated description
                     'metadata': {
                         'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                         'chunk_index': idx,

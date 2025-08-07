@@ -203,7 +203,7 @@ class ImageExtractor:
         
         return figures
     
-    def create_image_chunks(self, figures: List[Dict], base_filename: str, document_metadata: Dict, section_mapper, text_elements: List[Dict]) -> List[Dict]:
+    def create_image_chunks(self, figures: List[Dict], base_filename: str, document_metadata: Dict, section_mapper, text_elements: List[Dict], rfp_id: str = None) -> List[Dict]:
         """Create chunks for images with verbalization, section mapping, and LLM metadata"""
         image_chunks = []
         
@@ -244,7 +244,8 @@ class ImageExtractor:
                     'content_type': 'image',
                     'author': vendor_name,                             # From LLM extraction (vendor_name)
                     'content': figure.get('content', ''),
-                    'verbalized_content': verbalized_content,  # AI-generated description
+                    'verbalized_content': verbalized_content,
+                    'rfp_id':rfp_id, # AI-generated description
                     'metadata': {
                         'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                         'chunk_index': idx,
