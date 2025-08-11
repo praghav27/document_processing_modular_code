@@ -2,7 +2,8 @@ import os
 import uuid
 from datetime import datetime
 from typing import List, Dict
-from storage.local_storage import LocalStorage
+# from storage.local_storage import LocalStorage
+from storage.storage_factory import get_storage_instance
 from processors.content_verbalizer import ContentVerbalizer
 
 
@@ -11,7 +12,8 @@ class ImageExtractor:
     """Handle image/figure extraction and chunking logic"""
     
     def __init__(self):
-        self.storage = LocalStorage()
+        # self.storage = LocalStorage()
+        self.storage = get_storage_instance()
         self.verbalizer = ContentVerbalizer()
 
     def _find_footer_position(self, page_number: int, text_elements: List[Dict]) -> dict:
@@ -123,6 +125,11 @@ class ImageExtractor:
                     print(f"   Position: ({figure_x}, {figure_y})")
                     print(f"   Distance from Footer: {distance_from_footer}")
 
+                    # Check for logo BEFORE doing ANY storage operations
+                    if self._should_exclude_figure(figure_data, text_elements):
+                        print(f"ℹ️ Skipping logo figure {fig_idx + 1} - not saving to storage")
+                        continue  # Skip this figure entirely
+
                     # Try to extract actual image using get_analyze_result_figure
                     if figure.id and client and operation_id:
                         try:
@@ -171,9 +178,7 @@ class ImageExtractor:
                                         print(f"Error getting image dimensions: {e}")
 
 
-                                    if self._should_exclude_figure(figure_data, text_elements):
-                                        print(f"ℹ️ Excluding figure {fig_idx + 1} based on simple logo detection")
-                                        continue 
+                                    
                                 print(f"✅ Successfully extracted image for figure {fig_idx + 1}")
                             else:
                                 print(f"⚠️ No image data received for figure {fig_idx + 1}")
@@ -181,9 +186,7 @@ class ImageExtractor:
                         except Exception as e:
                             print(f"❌ Error extracting image for figure {fig_idx + 1}: {e}")
                             # Continue with text-only figure
-                            if self._should_exclude_figure(figure_data, text_elements):
-                                print(f"ℹ️ Excluding figure {fig_idx + 1} based on simple logo detection")
-                                continue
+                            
                     
                     else:
                         if not figure.id:
@@ -193,7 +196,14 @@ class ImageExtractor:
                     
                     # Save text content if available
                     if text_content and text_content.strip():
+                        print(f"💾 Saving text content for figure {fig_idx + 1}: {len(text_content)} characters")
                         text_path = self.storage.save_figure_text(text_content, base_filename, fig_idx + 1)
+                        if text_path:
+                            print(f"✅ Text saved successfully: {text_path}")
+                        else:
+                            print(f"❌ Failed to save text for figure {fig_idx + 1}")
+                    else:
+                        print(f"ℹ️ No text content for figure {fig_idx + 1}")
                     
                     figures.append(figure_data)
                     

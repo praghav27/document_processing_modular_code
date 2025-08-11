@@ -3,7 +3,8 @@ import pandas as pd
 import uuid
 from datetime import datetime
 from typing import List, Dict
-from storage.local_storage import LocalStorage
+# from storage.local_storage import LocalStorage
+from storage.storage_factory import get_storage_instance
 from processors.content_verbalizer import ContentVerbalizer
 
 
@@ -11,7 +12,8 @@ class TableExtractor:
     """Handle table extraction and chunking logic"""
     
     def __init__(self):
-        self.storage = LocalStorage()
+        # self.storage = LocalStorage()
+        self.storage = get_storage_instance()
         self.verbalizer = ContentVerbalizer()
     
     def extract_tables(self, result, base_filename: str, section_mapper) -> List[Dict]:

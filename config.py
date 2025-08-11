@@ -18,6 +18,12 @@ AZURE_EMBEDDING_ENDPOINT = os.getenv("AZURE_EMBEDDING_ENDPOINT")
 AZURE_EMBEDDING_API_KEY = os.getenv("AZURE_EMBEDDING_API_KEY")
 AZURE_EMBEDDING_MODEL = os.getenv("AZURE_EMBEDDING_MODEL")
 
+# Azure Blob Storage 
+USE_BLOB_STORAGE = os.getenv("USE_BLOB_STORAGE", "False").lower() == "true"
+AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+INPUT_CONTAINER_NAME = "rfp-documents"
+OUTPUT_CONTAINER_NAME = "extracted-rfp-data"
+
 # Storage paths
 TABLES_DIR = "extracted_content/tables"
 IMAGES_DIR = "extracted_content/images"

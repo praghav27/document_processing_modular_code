@@ -1,6 +1,8 @@
 import os
 from typing import Dict, List
-from storage.local_storage import LocalStorage
+# from storage.local_storage import LocalStorage
+from storage.storage_factory import get_storage_instance
+
 # from llm_metadata.power_extractor import PowerMetadataExtractor
 # from llm_metadata.rfi_extractor import RFIMetadataExtractor
 from llm_metadata import RFIExtractor, RFPExtractor
@@ -15,7 +17,8 @@ class ContentExtractor:
     """Extract and process content from Azure Document Intelligence results with verbalization and LLM metadata extraction"""
     
     def __init__(self):
-        self.storage = LocalStorage()
+        # self.storage = LocalStorage()
+        self.storage = get_storage_instance()
         self.text_elements = []  # Store for section association
         self.text_chunks = []  # Store text chunks for section mapping
         self.document_metadata = {}  # Store LLM-extracted document metadata

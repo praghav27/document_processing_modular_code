@@ -1,6 +1,7 @@
 import os
 from processors import AzureDocumentProcessor, ContentExtractor, FileHandler
-from storage.local_storage import LocalStorage
+# from storage.local_storage import LocalStorage
+from storage.storage_factory import get_storage_instance
 from typing import Dict, Any
 
 class DocumentProcessorMain:
@@ -8,7 +9,8 @@ class DocumentProcessorMain:
         self.azure_processor = AzureDocumentProcessor()
         self.content_extractor = ContentExtractor()
         self.file_handler = FileHandler()
-        self.storage = LocalStorage()
+        # self.storage = LocalStorage()
+        self.storage = get_storage_instance() 
     
     def process_document(self, uploaded_file, progress_callback=None) -> Dict[str, Any]:
         """Main processing pipeline with Azure Document Intelligence"""

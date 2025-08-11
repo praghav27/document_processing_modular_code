@@ -275,7 +275,7 @@ class TextExtractor:
                         "position": position_info
                     })
         print(f"📋 Extracted {len(text_elements)} text elements from paragraphs")
-        print(text_elements)
+        # print(text_elements)
         return text_elements
     
     def extract_rfp_id_from_text(self, text: str) -> str:
