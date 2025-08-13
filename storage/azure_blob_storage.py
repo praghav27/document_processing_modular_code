@@ -107,7 +107,7 @@ class AzureBlobStorage:
             print(f"❌ Error saving figure text {figure_index}: {e}")
             return None
     
-    def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> str:
+    # def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> str:
         """Save text chunks as JSON to blob"""
         json_filename = f"{filename}_text_chunks.json"
         blob_path = f"{self.document_uuid}/text/{json_filename}"
@@ -165,6 +165,65 @@ class AzureBlobStorage:
             print(f"❌ Error saving text chunks: {e}")
             return None
     
+    def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> tuple:
+        """Save text chunks as JSON to blob - Returns (chunk_data, blob_path)"""
+        json_filename = f"{filename}_text_chunks.json"
+        blob_path = f"{self.document_uuid}/text/{json_filename}"
+        
+        # Extract LLM metadata from chunks if available
+        llm_metadata = {}
+        if text_chunks and text_chunks[0].get('metadata', {}).get('llm_extracted_metadata'):
+            llm_metadata = text_chunks[0]['metadata']['llm_extracted_metadata']
+        
+        # Convert chunks to serializable format
+        chunk_data = {
+            "filename": filename,
+            "total_chunks": len(text_chunks),
+            "processing_method": "enhanced_chunking_with_verbalization_and_llm_metadata",
+            "llm_extracted_metadata": llm_metadata,
+            "chunk_types": {
+                "text": len([c for c in text_chunks if c['content_type'] == 'text']),
+                "table": len([c for c in text_chunks if c['content_type'] == 'table']),
+                "image": len([c for c in text_chunks if c['content_type'] == 'image'])
+            },
+            "created_at": text_chunks[0].get("metadata", {}).get("created_at", "") if text_chunks else "",
+            "chunks": []
+        }
+        
+        for chunk in text_chunks:
+            chunk_info = {
+                "chunk_id": chunk.get("chunk_id", ""),
+                "file_name": chunk.get("file_name", ""),
+                "section_name": chunk.get("section_name", ""),
+                "section_no": chunk.get("section_no", ""),
+                "domain": chunk.get("domain", ""),
+                "content_type": chunk.get("content_type", "text"),
+                "author": chunk.get("author", ""),
+                "content": chunk.get("content", ""),
+                "verbalized_content": chunk.get("verbalized_content", ""),
+                "rfp_id": chunk.get("rfp_id", ""),
+                "metadata": chunk.get("metadata", {})
+            }
+            chunk_data["chunks"].append(chunk_info)
+        
+        try:
+            json_data = json.dumps(chunk_data, indent=2, ensure_ascii=False)
+            blob_client = self.blob_service_client.get_blob_client(
+                container=self.output_container, 
+                blob=blob_path
+            )
+            blob_client.upload_blob(json_data, overwrite=True)
+            
+            print(f"💾 Saved text chunks to blob: {blob_path}")
+            print(f"   📊 Chunk breakdown: {chunk_data['chunk_types']['text']} text, {chunk_data['chunk_types']['table']} table, {chunk_data['chunk_types']['image']} image")
+            if llm_metadata:
+                print(f"   🤖 LLM Metadata: Project='{llm_metadata.get('project_title', 'N/A')[:30]}...', Vendor='{llm_metadata.get('vendor_name', 'N/A')}', Domain='{llm_metadata.get('domain_category', 'N/A')}'")
+            
+            return chunk_data, blob_path
+        except Exception as e:
+            print(f"❌ Error saving text chunks: {e}")
+            return None, None
+        
     def save_raw_text(self, raw_text: str, filename: str) -> str:
         """Save raw extracted text to blob"""
         txt_filename = f"{filename}_raw_text.txt"
