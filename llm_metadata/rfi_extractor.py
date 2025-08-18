@@ -370,7 +370,7 @@ class RFIExtractor:
             # OLD: response = self.verbalizer.client.chat.completions.create(
             # NEW: response = await self.verbalizer.client.chat.completions.create(
             response = await self.verbalizer.client.chat.completions.create(
-                model="gpt-4",  # Use same model as ContentVerbalizer
+                model="gpt-4o",  # Use same model as ContentVerbalizer
                 messages=[
                     {"role": "system", "content": "You are an expert RFI analyst. Extract metadata and match domains/services to the exact lists provided. Return only valid JSON with the 8 required fields for RFI documents."},
                     {"role": "user", "content": prompt}
@@ -424,7 +424,7 @@ class RFIExtractor:
             # OLD: response = self.verbalizer.client.chat.completions.create(
             # NEW: response = await self.verbalizer.client.chat.completions.create(
             response = await self.verbalizer.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an expert technical writer specializing in power infrastructure projects. Write flowing paragraph summaries only."},
                     {"role": "user", "content": description_prompt}
@@ -451,7 +451,7 @@ class RFIExtractor:
             # OLD: response = self.verbalizer.client.chat.completions.create(
             # NEW: response = await self.verbalizer.client.chat.completions.create(
             response = await self.verbalizer.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an expert at extracting project duration from documents. Return only the duration text."},
                     {"role": "user", "content": duration_prompt}

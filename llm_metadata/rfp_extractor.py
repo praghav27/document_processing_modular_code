@@ -308,7 +308,7 @@ class RFPExtractor:
            
             # response = self.verbalizer.client.chat.completions.create(
             response = await self.verbalizer.client.chat.completions.create(
-                model="gpt-4",  # Use same model as ContentVerbalizer
+                model="gpt-4o",  # Use same model as ContentVerbalizer
                 messages=[
                     {"role": "system", "content": "You are an expert Power Business Unit RFP analyst. Extract metadata and match domains/services to the exact Power Business Unit lists provided. Return only valid JSON with the 11 required fields for RFP documents."},
                     {"role": "user", "content": prompt}

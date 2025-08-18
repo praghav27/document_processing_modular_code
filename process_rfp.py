@@ -33,7 +33,7 @@ def main():
         return
     
     # List available documents
-    print("📋 Listing documents in tetratech-input-rfp container...")
+    print("📋 Listing documents in tetratech-input container...")
     try:
         documents = storage.list_input_documents()
     except Exception as e:

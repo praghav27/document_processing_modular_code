@@ -227,6 +227,8 @@ from .image_extractor import ImageExtractor  # Use existing file
 from .section_mapper import SectionMapper  # Use existing file
 from data_indexing.data_to_rfp_indexer import AzureSearchRFPResponseUploader
 from data_indexing.data_to_rfi_indexer import AzureSearchRFPRequestUploader
+from config import (AZURE_AI_SEARCH_ENDPOINT, AZURE_AI_SEARCH_KEY, AZURE_AI_SEARCH_RFI_INDEX_NAME,
+    AZURE_AI_SEARCH_RFP_INDEX_NAME, ENABLE_DOCUMENT_TYPE_DETECTION, DEFAULT_DOCUMENT_TYPE)
 
 
 class ContentExtractor:
@@ -267,26 +269,55 @@ class ContentExtractor:
         rfp_id = self.text_extractor.extract_rfp_id_from_text(all_text)
         print(f"🔑 Extracted RFP ID for all chunks: {rfp_id}")
         
-        # NEW: Step 1.2 - Detect document type (RFI vs RFP)
-        print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
-        self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
-        self.document_type = self.document_type_info.get('document_type', 'RFP')
-        self.type_detector.print_detection_summary(self.document_type_info)
+        # # NEW: Step 1.2 - Detect document type (RFI vs RFP)
+        # print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
+        # self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+        # self.document_type = self.document_type_info.get('document_type', 'RFP')
+        # self.type_detector.print_detection_summary(self.document_type_info)
         
-        # NEW: Step 1.5 - Extract document metadata using appropriate extractor
+        # # NEW: Step 1.5 - Extract document metadata using appropriate extractor
+        # if self.document_type == "RFI":
+        #     print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
+        #     rfi_extractor = RFIExtractor()
+        #     #  rfi_extractor = RFIMetadataExtractor()
+        #     self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
+        #     print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
+        # else:
+        #     print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
+        #     rfp_extractor = RFPExtractor()
+        #     # rfp_extractor = PowerMetadataExtractor()
+        #     self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
+        #     print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+
+        # Step 1.2 - Document type selection (Auto-detect or Hardcoded)
+        if ENABLE_DOCUMENT_TYPE_DETECTION:
+            print(f"📄 Step 1.2: Auto-detecting document type (RFI vs RFP)...")
+            self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+            # self.document_type = self.document_type_info.get('document_type', 'RFP')
+            document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+            self.storage.set_project_context(filename, document_type_folder)
+            self.type_detector.print_detection_summary(self.document_type_info)
+        else:
+            self.document_type = DEFAULT_DOCUMENT_TYPE
+            print(f"🔒 HARDCODED: Using {self.document_type} extractor (detection disabled)")
+            self.document_type_info = {
+                'document_type': self.document_type,
+                'confidence': 1.0,
+                'reasoning': 'Hardcoded configuration setting'
+            }
+
+        # Step 1.5 - Extract document metadata using selected extractor
         if self.document_type == "RFI":
             print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
             rfi_extractor = RFIExtractor()
-            #  rfi_extractor = RFIMetadataExtractor()
             self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
             print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
         else:
             print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
             rfp_extractor = RFPExtractor()
-            # rfp_extractor = PowerMetadataExtractor()
             self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
             print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
-        
+                
         print(f"📋 Step 2: Creating text chunks with LLM metadata using SimpleChunker...")
         self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
         print(f"📋 Text chunks created: {len(self.text_chunks)}")

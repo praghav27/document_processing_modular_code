@@ -39,7 +39,8 @@ class AzureDocumentProcessor:
             # Debug: Print result attributes to understand the structure
             print(f"📋 Result attributes: {dir(result)}")
             print(f"poller details: {poller.details}")
-            # Get operation details properly
+
+            
             operation_id = poller.details["operation_id"]
             print(f"Operation id : {operation_id}")
             

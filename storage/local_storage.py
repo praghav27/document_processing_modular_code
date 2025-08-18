@@ -18,11 +18,19 @@ class LocalStorage:
         os.makedirs(TABLES_DIR, exist_ok=True)
         os.makedirs(IMAGES_DIR, exist_ok=True)
         os.makedirs(TEXT_DIR, exist_ok=True)
-    
+        
+    def set_project_context(self, filename: str, document_type: str):
+        """Set project ID and document type from filename (local storage compatibility)"""
+        self.project_id = filename[:15] if filename else "unknown"
+        self.document_type = document_type.lower()
+        print(f"📁 Local storage context: {self.project_id}/{self.document_type}")
+
     def save_table(self, df: pd.DataFrame, filename: str, table_index: int) -> str:
         """Save table as CSV file"""
         csv_filename = f"{filename}_table_{table_index}.csv"
-        csv_path = os.path.join(TABLES_DIR, csv_filename)
+        # csv_path = os.path.join(TABLES_DIR, csv_filename)
+        tables_dir = os.path.join("extracted_content", self.project_id, self.document_type, "tables")
+        csv_path = os.path.join(tables_dir, csv_filename)
         df.to_csv(csv_path, index=False)
         print(f"💾 Saved table {table_index}: {csv_path}")
         return csv_path
@@ -32,6 +40,7 @@ class LocalStorage:
         try:
             img_filename = f"{filename}_figure_{figure_index}.png"
             img_path = os.path.join(IMAGES_DIR, img_filename)
+            
             
             # Try to open with PIL to validate and convert to PNG
             try:

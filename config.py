@@ -21,7 +21,7 @@ AZURE_EMBEDDING_MODEL = os.getenv("AZURE_EMBEDDING_MODEL")
 # Azure Blob Storage 
 USE_BLOB_STORAGE = os.getenv("USE_BLOB_STORAGE", "False").lower() == "true"
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-INPUT_CONTAINER_NAME = "rfp-documents"
+INPUT_CONTAINER_NAME = "four-splitted-rfp-documents"
 OUTPUT_CONTAINER_NAME = "extracted-rfp-data"
 
 AZURE_AI_SEARCH_ENDPOINT=os.getenv("AZURE_AI_SEARCH_ENDPOINT")
@@ -33,6 +33,10 @@ AZURE_AI_SEARCH_RFP_INDEX_NAME=os.getenv("AZURE_AI_SEARCH_RFP_INDEX_NAME")
 TABLES_DIR = "extracted_content/tables"
 IMAGES_DIR = "extracted_content/images"
 TEXT_DIR = "extracted_content/text"
+
+#Hardcode logic
+ENABLE_DOCUMENT_TYPE_DETECTION = os.getenv("ENABLE_DOCUMENT_TYPE_DETECTION", "True").lower() == "true"
+DEFAULT_DOCUMENT_TYPE = os.getenv("DEFAULT_DOCUMENT_TYPE", "RFI")  # RFP or RFI
 
 # Supported file types
 SUPPORTED_EXTENSIONS = ['.pdf', '.docx', '.xlsx']

@@ -105,6 +105,7 @@ class DocumentProcessorMain:
     def process_document(self, uploaded_file, progress_callback=None) -> Dict[str, Any]:
         """Main processing pipeline with Azure Document Intelligence"""
         filename = uploaded_file.name
+        base_filename = os.path.splitext(filename)[0]
         
         try:
             # Validate file
