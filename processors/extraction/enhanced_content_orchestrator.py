@@ -305,6 +305,8 @@ class ContentExtractor:
                 'confidence': 1.0,
                 'reasoning': 'Hardcoded configuration setting'
             }
+        document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+        self.storage.set_project_context(filename, document_type_folder)    
 
         # Step 1.5 - Extract document metadata using selected extractor
         if self.document_type == "RFI":
@@ -323,14 +325,10 @@ class ContentExtractor:
         print(f"📋 Text chunks created: {len(self.text_chunks)}")
         
         print(f"📋 Step 3: Extracting tables with section association...")
-        # ✅ Pass section_mapper to existing table_extractor
-        tables = self.table_extractor.extract_tables(result, base_filename, self.section_mapper)
-        print(f"📋 Tables extracted: {len(tables)}")
-        
+        tables = self.table_extractor.extract_tables(result, base_filename, self.section_mapper, self.storage)
+
         print(f"📋 Step 4: Extracting figures with section association...")
-        # ✅ Pass section_mapper to existing image_extractor  
-        figures = self.image_extractor.extract_figures(result, base_filename, client, operation_id, self.section_mapper, self.text_elements)
-        print(f"📋 Figures extracted: {len(figures)}")
+        figures = self.image_extractor.extract_figures(result, base_filename, client, operation_id, self.section_mapper, self.text_elements, self.storage)
         
         # Create table chunks with verbalization, section mapping, and LLM metadata
         print(f"🤖 Creating table chunks with verbalization, section mapping, and LLM metadata...")
@@ -450,3 +448,7 @@ class ContentExtractor:
             
         print(f"✅ FULL CONTENT DISPLAY: No truncation - see complete text, tables, and verbalizations")
         print(f"{'='*80}")
+
+        # Show storage path
+        if hasattr(self.storage, 'project_id') and hasattr(self.storage, 'document_type'):
+            print(f"💾 Storage Path: {self.storage.project_id}/{self.storage.document_type}")

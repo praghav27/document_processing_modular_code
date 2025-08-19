@@ -36,7 +36,7 @@ TEXT_DIR = "extracted_content/text"
 
 #Hardcode logic
 ENABLE_DOCUMENT_TYPE_DETECTION = os.getenv("ENABLE_DOCUMENT_TYPE_DETECTION", "True").lower() == "true"
-DEFAULT_DOCUMENT_TYPE = os.getenv("DEFAULT_DOCUMENT_TYPE", "RFI")  # RFP or RFI
+DEFAULT_DOCUMENT_TYPE = os.getenv("DEFAULT_DOCUMENT_TYPE", "RFP")  # RFP or RFI
 
 # Supported file types
 SUPPORTED_EXTENSIONS = ['.pdf', '.docx', '.xlsx']

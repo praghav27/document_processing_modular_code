@@ -16,7 +16,7 @@ from typing import List, Dict
 class AzureBlobStorage:
     """Handle blob storage of extracted content with UUID organization"""
     
-    _shared_uuid = None  # used for shared UUID
+    # _shared_uuid = None  # used for shared UUID
     
     def __init__(self):
         self.blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
@@ -37,13 +37,17 @@ class AzureBlobStorage:
     
     def set_project_context(self, filename: str, document_type: str):
         """Set project ID and document type from filename"""
-        # Extract first 15 char as project_id
+        # Extract first 15 characters as project_id
         self.project_id = filename[:15] if filename else "unknown"
         
         # Set document type (rfp_request or rfp_response)
         self.document_type = document_type.lower()
-        
-        print(f"📁 Storage context: {self.project_id}/{self.document_type}")
+        print(f"📁 Storage context set: {self.project_id}/{self.document_type}")
+
+    def _ensure_project_context(self):
+        """Ensure project context is set before operations"""
+        if not self.project_id or not self.document_type:
+            raise ValueError("Project context not set. Call set_project_context() first.")
 
     def list_input_documents(self) -> List[str]:
         """List all PDF documents in input container"""
@@ -70,6 +74,7 @@ class AzureBlobStorage:
     
     def save_table(self, df: pd.DataFrame, filename: str, table_index: int) -> str:
         """Save table as CSV to blob"""
+        self._ensure_project_context()
         csv_filename = f"{filename}_table_{table_index}.csv"
         # blob_path = f"{self.document_uuid}/tables/{csv_filename}"
         blob_path = f"{self.project_id}/{self.document_type}/tables/{csv_filename}"
@@ -89,6 +94,7 @@ class AzureBlobStorage:
     
     def save_figure_image_bytes(self, image_bytes: bytes, filename: str, figure_index: int) -> str:
         """Save figure image from raw bytes to blob"""
+        self._ensure_project_context()
         try:
             img_filename = f"{filename}_figure_{figure_index}.png"
             # blob_path = f"{self.document_uuid}/images/{img_filename}"
@@ -107,6 +113,7 @@ class AzureBlobStorage:
     
     def save_figure_text(self, text_content: str, filename: str, figure_index: int) -> str:
         """Save figure text content to blob"""
+        self._ensure_project_context()
         txt_filename = f"{filename}_figure_{figure_index}.txt"
         # blob_path = f"{self.document_uuid}/images/{txt_filename}"
         blob_path = f"{self.project_id}/{self.document_type}/images/{txt_filename}"
@@ -183,6 +190,7 @@ class AzureBlobStorage:
     
     def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> tuple:
         """Save text chunks as JSON to blob - Returns (chunk_data, blob_path)"""
+        self._ensure_project_context()
         json_filename = f"{filename}_text_chunks.json"
         # blob_path = f"{self.document_uuid}/text/{json_filename}"
         blob_path = f"{self.project_id}/{self.document_type}/text/{json_filename}"
@@ -243,6 +251,7 @@ class AzureBlobStorage:
         
     def save_raw_text(self, raw_text: str, filename: str) -> str:
         """Save raw extracted text to blob"""
+        self._ensure_project_context()
         txt_filename = f"{filename}_raw_text.txt"
         # blob_path = f"{self.document_uuid}/text/{txt_filename}"
         blob_path = f"{self.project_id}/{self.document_type}/text/{txt_filename}"

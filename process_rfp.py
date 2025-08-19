@@ -104,7 +104,7 @@ def main():
             print(f"   🏢 Client: {metadata.get('client_name', 'N/A')}")
             print(f"   📝 Project: {metadata.get('project_title', 'N/A')}")
         
-        print(f"\n💾 Results stored in: extracted-rfp-data/{storage.document_uuid}/")
+        
         
     except Exception as e:
         print(f"\n❌ Processing failed: {e}")

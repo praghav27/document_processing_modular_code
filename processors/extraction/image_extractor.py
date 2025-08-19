@@ -510,7 +510,7 @@ class ImageExtractor:
 
         return False
         
-    def extract_figures(self, result, base_filename: str, client=None, operation_id=None, section_mapper=None, text_elements: List[Dict] = None) -> List[Dict]:
+    def extract_figures(self, result, base_filename: str, client=None, operation_id=None, section_mapper=None, text_elements: List[Dict] = None,storage=None) -> List[Dict]:
         """Extract figures/images using Azure Document Intelligence with section association"""
         figures = []
         
@@ -577,11 +577,15 @@ class ImageExtractor:
                             
                             if image_bytes:
                                 # Save the image
-                                image_path = self.storage.save_figure_image_bytes(
-                                    image_bytes, 
-                                    base_filename, 
-                                    fig_idx + 1
-                                )
+                                
+                                # image_path = self.storage.save_figure_image_bytes(
+                                #     image_bytes, 
+                                #     base_filename, 
+                                #     fig_idx + 1
+                                # )
+                                active_storage = storage if storage else self.storage
+                                image_path = active_storage.save_figure_image_bytes(image_bytes, base_filename, fig_idx + 1)
+
                                 
                                 if image_path:
                                     # Convert to base64 for display
@@ -627,7 +631,9 @@ class ImageExtractor:
                     # Save text content if available
                     if text_content and text_content.strip():
                         print(f"💾 Saving text content for figure {fig_idx + 1}: {len(text_content)} characters")
-                        text_path = self.storage.save_figure_text(text_content, base_filename, fig_idx + 1)
+                        
+                        # text_path = self.storage.save_figure_text(text_content, base_filename, fig_idx + 1)
+                        text_path = active_storage.save_figure_text(text_content, base_filename, fig_idx + 1)
                         if text_path:
                             print(f"✅ Text saved successfully: {text_path}")
                         else:

@@ -288,8 +288,8 @@ class TableExtractor:
         # self.storage = LocalStorage()
         self.storage = get_storage_instance()
         self.verbalizer = ContentVerbalizer()
-    
-    def extract_tables(self, result, base_filename: str, section_mapper) -> List[Dict]:
+
+    def extract_tables(self, result, base_filename: str, section_mapper,storage=None) -> List[Dict]:
         """Extract and save tables using Azure Document Intelligence with section association"""
         tables = []
         
@@ -298,7 +298,11 @@ class TableExtractor:
                 try:
                     df = self._table_to_dataframe(table)
                     if not df.empty:
-                        csv_path = self.storage.save_table(df, base_filename, table_idx + 1)
+                        
+                        if storage:
+                            csv_path = storage.save_table(df, base_filename, table_idx + 1)
+                        else:
+                            csv_path = self.storage.save_table(df, base_filename, table_idx + 1)
                         
                         # Get table position and find closest section
                         table_page = getattr(table.bounding_regions[0], 'page_number', 1) if table.bounding_regions else 1
