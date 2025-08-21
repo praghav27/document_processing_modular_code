@@ -28,10 +28,15 @@ class LocalStorage:
     def save_table(self, df: pd.DataFrame, filename: str, table_index: int) -> str:
         """Save table as CSV file"""
         csv_filename = f"{filename}_table_{table_index}.csv"
-        # csv_path = os.path.join(TABLES_DIR, csv_filename)
-        tables_dir = os.path.join("extracted_content", self.project_id, self.document_type, "tables")
-        os.makedirs(tables_dir, exist_ok=True)
-        csv_path = os.path.join(tables_dir, csv_filename)
+        
+        # Use project context if available, otherwise fallback to main TABLES_DIR
+        if hasattr(self, 'project_id') and hasattr(self, 'document_type'):
+            tables_dir = os.path.join("extracted_content", self.project_id, self.document_type, "tables")
+            os.makedirs(tables_dir, exist_ok=True)
+            csv_path = os.path.join(tables_dir, csv_filename)
+        else:
+            csv_path = os.path.join(TABLES_DIR, csv_filename)
+            
         df.to_csv(csv_path, index=False)
         print(f"💾 Saved table {table_index}: {csv_path}")
         return csv_path
@@ -40,13 +45,14 @@ class LocalStorage:
         """Save figure image from raw bytes data"""
         try:
             img_filename = f"{filename}_figure_{figure_index}.png"
-            # Create the directory structure if it doesn't exist
-            images_dir = os.path.join("extracted_content", self.project_id, self.document_type, "images")
-            os.makedirs(images_dir, exist_ok=True)
-            # img_path = os.path.join(IMAGES_DIR, img_filename)
-            images_dir = os.path.join("extracted_content", self.project_id, self.document_type, "images")
-            os.makedirs(images_dir, exist_ok=True)
-            img_path = os.path.join(images_dir, img_filename)
+            
+            # Use project context if available, otherwise fallback to main IMAGES_DIR
+            if hasattr(self, 'project_id') and hasattr(self, 'document_type'):
+                images_dir = os.path.join("extracted_content", self.project_id, self.document_type, "images")
+                os.makedirs(images_dir, exist_ok=True)
+                img_path = os.path.join(images_dir, img_filename)
+            else:
+                img_path = os.path.join(IMAGES_DIR, img_filename)
  
            
             # Try to open with PIL to validate and convert to PNG
@@ -68,13 +74,14 @@ class LocalStorage:
     def save_figure_text(self, text_content: str, filename: str, figure_index: int) -> str:
         """Save figure text content"""
         txt_filename = f"{filename}_figure_{figure_index}.txt"
-        # Create the directory structure if it doesn't exist
-        images_dir = os.path.join("extracted_content", self.project_id, self.document_type, "images")
-        os.makedirs(images_dir, exist_ok=True)  
-        # txt_path = os.path.join(IMAGES_DIR, txt_filename)
-        images_dir = os.path.join("extracted_content", self.project_id, self.document_type, "images")
-        os.makedirs(images_dir, exist_ok=True)
-        txt_path = os.path.join(images_dir, txt_filename)
+        
+        # Use project context if available, otherwise fallback to main IMAGES_DIR
+        if hasattr(self, 'project_id') and hasattr(self, 'document_type'):
+            images_dir = os.path.join("extracted_content", self.project_id, self.document_type, "images")
+            os.makedirs(images_dir, exist_ok=True)
+            txt_path = os.path.join(images_dir, txt_filename)
+        else:
+            txt_path = os.path.join(IMAGES_DIR, txt_filename)
        
         with open(txt_path, 'w', encoding='utf-8') as f:
             f.write(text_content)
@@ -137,10 +144,14 @@ class LocalStorage:
     def save_raw_text(self, raw_text: str, filename: str) -> str:
         """Save raw extracted text"""
         txt_filename = f"{filename}_raw_text.txt"
-        # Create the directory structure if it doesn't exist
-        text_dir = os.path.join("extracted_content", self.project_id, self.document_type, "text")
-        os.makedirs(text_dir, exist_ok=True)
-        txt_path = os.path.join(TEXT_DIR, txt_filename)
+        
+        # Use project context if available, otherwise fallback to main TEXT_DIR
+        if hasattr(self, 'project_id') and hasattr(self, 'document_type'):
+            text_dir = os.path.join("extracted_content", self.project_id, self.document_type, "text")
+            os.makedirs(text_dir, exist_ok=True)
+            txt_path = os.path.join(text_dir, txt_filename)
+        else:
+            txt_path = os.path.join(TEXT_DIR, txt_filename)
        
         with open(txt_path, 'w', encoding='utf-8') as f:
             f.write(raw_text)
@@ -263,10 +274,14 @@ class LocalStorage:
     def load_text_chunks(self, filename: str) -> List[Dict]:
         """Load enhanced text chunks with verbalization and LLM metadata from JSON file"""
         json_filename = f"{filename}_text_chunks.json"
-        # json_path = os.path.join(TEXT_DIR, json_filename)
-        text_dir = os.path.join("extracted_content", self.project_id, self.document_type, "text")
-        os.makedirs(text_dir, exist_ok=True)
-        json_path = os.path.join(text_dir, json_filename)
+        
+        # Use project context if available, otherwise fallback to main TEXT_DIR
+        if hasattr(self, 'project_id') and hasattr(self, 'document_type'):
+            text_dir = os.path.join("extracted_content", self.project_id, self.document_type, "text")
+            os.makedirs(text_dir, exist_ok=True)
+            json_path = os.path.join(text_dir, json_filename)
+        else:
+            json_path = os.path.join(TEXT_DIR, json_filename)
        
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
@@ -307,10 +322,14 @@ class LocalStorage:
     def load_raw_text(self, filename: str) -> str:
         """Load raw text from file"""
         txt_filename = f"{filename}_raw_text.txt"
-        # txt_path = os.path.join(TEXT_DIR, txt_filename)
-        text_dir = os.path.join("extracted_content", self.project_id, self.document_type, "text")
-        os.makedirs(text_dir, exist_ok=True)
-        txt_path = os.path.join(text_dir, txt_filename)
+        
+        # Use project context if available, otherwise fallback to main TEXT_DIR
+        if hasattr(self, 'project_id') and hasattr(self, 'document_type'):
+            text_dir = os.path.join("extracted_content", self.project_id, self.document_type, "text")
+            os.makedirs(text_dir, exist_ok=True)
+            txt_path = os.path.join(text_dir, txt_filename)
+        else:
+            txt_path = os.path.join(TEXT_DIR, txt_filename)
        
         try:
             with open(txt_path, 'r', encoding='utf-8') as f:
@@ -441,11 +460,120 @@ class LocalStorage:
        
         report = {
             "document_name": filename,
-            "processing_timestamp": "",
+            "processing_timestamp": pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
             "content_summary": {
                 "text_chunks": 0,
                 "table_chunks": 0,
                 "image_chunks": 0,
                 "tables": 0,
                 "figures": 0,
-                "sections
+                "sections": 0
+            },
+            "llm_metadata": {},
+            "verbalization_stats": {
+                "total_verbalized_items": 0,
+                "verbalized_tables": 0,
+                "verbalized_images": 0
+            },
+            "storage_locations": [],
+            "quality_metrics": {
+                "metadata_completeness": 0.0,
+                "verbalization_coverage": 0.0,
+                "content_diversity": 0.0
+            }
+        }
+        
+        # Load data from stored files
+        try:
+            # Load text chunks
+            chunks_data = self.load_text_chunks(base_filename)
+            if chunks_data:
+                report["content_summary"]["text_chunks"] = len([c for c in chunks_data if c.get('content_type') == 'text'])
+                report["content_summary"]["table_chunks"] = len([c for c in chunks_data if c.get('content_type') == 'table'])
+                report["content_summary"]["image_chunks"] = len([c for c in chunks_data if c.get('content_type') == 'image'])
+                
+                # Count verbalized items
+                verbalized_items = [c for c in chunks_data if c.get('verbalized_content') and c.get('verbalized_content') != c.get('content', '')]
+                report["verbalization_stats"]["total_verbalized_items"] = len(verbalized_items)
+                report["verbalization_stats"]["verbalized_tables"] = len([c for c in verbalized_items if c.get('content_type') == 'table'])
+                report["verbalization_stats"]["verbalized_images"] = len([c for c in verbalized_items if c.get('content_type') == 'image'])
+            
+            # Load LLM metadata
+            llm_metadata = self.load_document_metadata(base_filename)
+            report["llm_metadata"] = llm_metadata
+            
+            # Load TIP metadata if available
+            tip_metadata = self.load_tip_metadata(base_filename)
+            if tip_metadata:
+                report["tip_metadata"] = tip_metadata
+            
+            # Get storage summary
+            storage_summary = self.get_storage_summary(base_filename)
+            report["storage_locations"] = storage_summary.get("files", {})
+            
+            # Calculate quality metrics
+            total_chunks = sum(report["content_summary"][key] for key in ["text_chunks", "table_chunks", "image_chunks"])
+            if total_chunks > 0:
+                report["quality_metrics"]["verbalization_coverage"] = round(
+                    report["verbalization_stats"]["total_verbalized_items"] / total_chunks, 2
+                )
+            
+            # Metadata completeness (based on LLM metadata fields)
+            if llm_metadata:
+                non_empty_fields = sum(1 for value in llm_metadata.values() if value and value != 'Not Specified')
+                total_fields = len(llm_metadata)
+                if total_fields > 0:
+                    report["quality_metrics"]["metadata_completeness"] = round(non_empty_fields / total_fields, 2)
+            
+            # Content diversity (different content types)
+            content_types = sum(1 for value in [
+                report["content_summary"]["text_chunks"],
+                report["content_summary"]["table_chunks"], 
+                report["content_summary"]["image_chunks"]
+            ] if value > 0)
+            report["quality_metrics"]["content_diversity"] = round(content_types / 3, 2)
+            
+        except Exception as e:
+            print(f"❌ Error creating comprehensive report: {e}")
+            report["error"] = str(e)
+        
+        return report
+    
+    def cleanup_old_files(self, filename: str, keep_days: int = 30) -> Dict:
+        """Clean up old files for a document (older than keep_days)"""
+        base_filename = os.path.splitext(filename)[0]
+        cleanup_summary = {
+            "files_removed": 0,
+            "space_freed_mb": 0,
+            "files_kept": 0
+        }
+        
+        import time
+        current_time = time.time()
+        cutoff_time = current_time - (keep_days * 24 * 60 * 60)
+        
+        directories = [TEXT_DIR, TABLES_DIR, IMAGES_DIR]
+        
+        for directory in directories:
+            if os.path.exists(directory):
+                for file in os.listdir(directory):
+                    if file.startswith(base_filename):
+                        file_path = os.path.join(directory, file)
+                        file_time = os.path.getmtime(file_path)
+                        
+                        if file_time < cutoff_time:
+                            file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+                            try:
+                                os.remove(file_path)
+                                cleanup_summary["files_removed"] += 1
+                                cleanup_summary["space_freed_mb"] += file_size
+                                print(f"🗑️ Removed old file: {file_path}")
+                            except Exception as e:
+                                print(f"❌ Error removing file {file_path}: {e}")
+                        else:
+                            cleanup_summary["files_kept"] += 1
+        
+        cleanup_summary["space_freed_mb"] = round(cleanup_summary["space_freed_mb"], 2)
+        print(f"🧹 Cleanup complete: {cleanup_summary['files_removed']} files removed, {cleanup_summary['space_freed_mb']} MB freed")
+        
+        return cleanup_summary
