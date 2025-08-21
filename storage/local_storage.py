@@ -616,4 +616,6 @@ class LocalStorage:
                     stats["chunk_integration"][content_type]["with_metadata"] += 1
        
         return stats
+    
+    
  

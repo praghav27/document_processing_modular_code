@@ -12,9 +12,18 @@
 
 # __all__ = ['AzureDocumentProcessor', 'ContentExtractor', 'FileHandler', 'ContentVerbalizer']
 
+# from .azure_processor import AzureDocumentProcessor
+# from .extraction.enhanced_content_orchestrator import ContentExtractor  # Now uses enhanced version
+# from .file_handler import FileHandler
+# from .content_verbalizer import ContentVerbalizer
+
+# __all__ = ['AzureDocumentProcessor', 'ContentExtractor', 'FileHandler', 'ContentVerbalizer']
+
+
 from .azure_processor import AzureDocumentProcessor
 from .extraction.enhanced_content_orchestrator import ContentExtractor  # Now uses enhanced version
 from .file_handler import FileHandler
 from .content_verbalizer import ContentVerbalizer
+from .tip.tip_processor import TIPProcessor
 
-__all__ = ['AzureDocumentProcessor', 'ContentExtractor', 'FileHandler', 'ContentVerbalizer']
+__all__ = ['AzureDocumentProcessor', 'ContentExtractor', 'FileHandler', 'ContentVerbalizer', 'TIPProcessor']
