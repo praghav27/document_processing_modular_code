@@ -49,6 +49,7 @@ class AzureSearchRFPResponseUploader:
 
         document = {
             "chunk_id": chunk.get("chunk_id"),
+            "project_id": chunk.get("project_id"),  # NEW FIELD
             "file_name": chunk.get("file_name"),
             "section_name": chunk.get("section_name"),
             "section_no": chunk.get("section_no"),

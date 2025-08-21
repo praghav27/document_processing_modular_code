@@ -187,6 +187,7 @@ class RFPRequestIndexManager:
     def build_index_schema(self):
         fields = [
             SimpleField(name="chunk_id", type=SearchFieldDataType.String, key=True, retrievable=True),
+            SimpleField(name="project_id", type=SearchFieldDataType.String, filterable=True, facetable=True, retrievable=True),
             SimpleField(name="file_name", type=SearchFieldDataType.String, filterable=True),
             SearchableField(name="section_name", type=SearchFieldDataType.String, facetable=True),
             SimpleField(name="section_no", type=SearchFieldDataType.String, retrievable=True),

@@ -1,3 +1,6 @@
+
+
+
 # import os
 # from typing import Dict, List
 # # from storage.local_storage import LocalStorage
@@ -13,6 +16,8 @@
 # from .section_mapper import SectionMapper  # Use existing file
 # from data_indexing.data_to_rfp_indexer import AzureSearchRFPResponseUploader
 # from data_indexing.data_to_rfi_indexer import AzureSearchRFPRequestUploader
+# from config import (AZURE_AI_SEARCH_ENDPOINT, AZURE_AI_SEARCH_KEY, AZURE_AI_SEARCH_RFI_INDEX_NAME,
+#     AZURE_AI_SEARCH_RFP_INDEX_NAME, ENABLE_DOCUMENT_TYPE_DETECTION, DEFAULT_DOCUMENT_TYPE)
 
 
 # class ContentExtractor:
@@ -37,7 +42,6 @@
 #         self.image_extractor = ImageExtractor()
 #         self.section_mapper = SectionMapper()  # ✅ Keep section mapping separate
     
-#     # def extract_all_content(self, result, filename: str, client=None, operation_id=None) -> Dict:
 #     async def extract_all_content(self, result, filename: str, client=None, operation_id=None) -> Dict:
 #         """Extract text, tables, and images from Azure Document Intelligence result with verbalization and LLM metadata extraction"""
 #         base_filename = os.path.splitext(filename)[0]
@@ -54,53 +58,76 @@
 #         rfp_id = self.text_extractor.extract_rfp_id_from_text(all_text)
 #         print(f"🔑 Extracted RFP ID for all chunks: {rfp_id}")
         
-#         # NEW: Step 1.2 - Detect document type (RFI vs RFP)
-#         print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
-#         self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
-#         self.document_type = self.document_type_info.get('document_type', 'RFP')
-#         self.type_detector.print_detection_summary(self.document_type_info)
+#         # # NEW: Step 1.2 - Detect document type (RFI vs RFP)
+#         # print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
+#         # self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+#         # self.document_type = self.document_type_info.get('document_type', 'RFP')
+#         # self.type_detector.print_detection_summary(self.document_type_info)
         
-#         # NEW: Step 1.5 - Extract document metadata using appropriate extractor
+#         # # NEW: Step 1.5 - Extract document metadata using appropriate extractor
+#         # if self.document_type == "RFI":
+#         #     print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
+#         #     rfi_extractor = RFIExtractor()
+#         #     #  rfi_extractor = RFIMetadataExtractor()
+#         #     self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
+#         #     print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
+#         # else:
+#         #     print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
+#         #     rfp_extractor = RFPExtractor()
+#         #     # rfp_extractor = PowerMetadataExtractor()
+#         #     self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
+#         #     print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+
+#         # Step 1.2 - Document type selection (Auto-detect or Hardcoded)
+#         if ENABLE_DOCUMENT_TYPE_DETECTION:
+#             print(f"📄 Step 1.2: Auto-detecting document type (RFI vs RFP)...")
+#             self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+#             # self.document_type = self.document_type_info.get('document_type', 'RFP')
+#             document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+#             self.storage.set_project_context(filename, document_type_folder)
+#             self.type_detector.print_detection_summary(self.document_type_info)
+#         else:
+#             self.document_type = DEFAULT_DOCUMENT_TYPE
+#             print(f"🔒 HARDCODED: Using {self.document_type} extractor (detection disabled)")
+#             self.document_type_info = {
+#                 'document_type': self.document_type,
+#                 'confidence': 1.0,
+#                 'reasoning': 'Hardcoded configuration setting'
+#             }
+#         document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+#         self.storage.set_project_context(filename, document_type_folder)    
+
+#         # Step 1.5 - Extract document metadata using selected extractor
 #         if self.document_type == "RFI":
 #             print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
 #             rfi_extractor = RFIExtractor()
-#             #  rfi_extractor = RFIMetadataExtractor()
-#             # self.document_metadata = rfi_extractor.extract_metadata(self.text_elements)
 #             self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
 #             print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
 #         else:
 #             print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
 #             rfp_extractor = RFPExtractor()
-#             # rfp_extractor = PowerMetadataExtractor()
-#             # self.document_metadata = rfp_extractor.extract_metadata(self.text_elements)
 #             self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
 #             print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
-        
+                
 #         print(f"📋 Step 2: Creating text chunks with LLM metadata using SimpleChunker...")
 #         self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
 #         print(f"📋 Text chunks created: {len(self.text_chunks)}")
         
 #         print(f"📋 Step 3: Extracting tables with section association...")
-#         # ✅ Pass section_mapper to existing table_extractor
-#         tables = self.table_extractor.extract_tables(result, base_filename, self.section_mapper)
-#         print(f"📋 Tables extracted: {len(tables)}")
-        
+#         tables = self.table_extractor.extract_tables(result, base_filename, self.section_mapper, self.storage)
+
 #         print(f"📋 Step 4: Extracting figures with section association...")
-#         # ✅ Pass section_mapper to existing image_extractor  
-#         figures = self.image_extractor.extract_figures(result, base_filename, client, operation_id, self.section_mapper, self.text_elements)
-#         print(f"📋 Figures extracted: {len(figures)}")
+#         figures = self.image_extractor.extract_figures(result, base_filename, client, operation_id, self.section_mapper, self.text_elements, self.storage)
         
 #         # Create table chunks with verbalization, section mapping, and LLM metadata
 #         print(f"🤖 Creating table chunks with verbalization, section mapping, and LLM metadata...")
 #         # ✅ Pass section_mapper to existing table_extractor
-#         # table_chunks = self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements,rfp_id=rfp_id)
-#         table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements,rfp_id=rfp_id)
+#         table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
 
 #         # Create image chunks with verbalization, section mapping, and LLM metadata
 #         print(f"🤖 Creating image chunks with verbalization, section mapping, and LLM metadata...")
 #         # ✅ Pass section_mapper to existing image_extractor
-#         # image_chunks = self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements,rfp_id=rfp_id)
-#         image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements,rfp_id=rfp_id)
+#         image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
 
 #         # Combine all chunks
 #         all_chunks = self.text_chunks + table_chunks + image_chunks
@@ -211,6 +238,12 @@
 #         print(f"✅ FULL CONTENT DISPLAY: No truncation - see complete text, tables, and verbalizations")
 #         print(f"{'='*80}")
 
+#         # Show storage path
+#         if hasattr(self.storage, 'project_id') and hasattr(self.storage, 'document_type'):
+#             print(f"💾 Storage Path: {self.storage.project_id}/{self.storage.document_type}")
+
+
+
 
 import os
 from typing import Dict, List
@@ -252,6 +285,18 @@ class ContentExtractor:
         self.table_extractor = TableExtractor()
         self.image_extractor = ImageExtractor()
         self.section_mapper = SectionMapper()  # ✅ Keep section mapping separate
+
+    # NEW METHOD: Extract project ID from filename
+    def _extract_project_id_from_filename(self, filename: str) -> str:
+        """Extract project ID (first 15 characters) from filename"""
+        if not filename:
+            return "unknown_project"
+        
+        # Remove file extension and get first 15 characters
+        base_name = os.path.splitext(filename)[0]
+        project_id = base_name[:15] if len(base_name) >= 15 else base_name
+        print(f"🔑 Extracted Project ID: {project_id}")
+        return project_id
     
     async def extract_all_content(self, result, filename: str, client=None, operation_id=None) -> Dict:
         """Extract text, tables, and images from Azure Document Intelligence result with verbalization and LLM metadata extraction"""
@@ -269,26 +314,9 @@ class ContentExtractor:
         rfp_id = self.text_extractor.extract_rfp_id_from_text(all_text)
         print(f"🔑 Extracted RFP ID for all chunks: {rfp_id}")
         
-        # # NEW: Step 1.2 - Detect document type (RFI vs RFP)
-        # print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
-        # self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
-        # self.document_type = self.document_type_info.get('document_type', 'RFP')
-        # self.type_detector.print_detection_summary(self.document_type_info)
+        # NEW: Extract project ID from filename
+        project_id = self._extract_project_id_from_filename(filename)
         
-        # # NEW: Step 1.5 - Extract document metadata using appropriate extractor
-        # if self.document_type == "RFI":
-        #     print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
-        #     rfi_extractor = RFIExtractor()
-        #     #  rfi_extractor = RFIMetadataExtractor()
-        #     self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
-        #     print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
-        # else:
-        #     print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
-        #     rfp_extractor = RFPExtractor()
-        #     # rfp_extractor = PowerMetadataExtractor()
-        #     self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
-        #     print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
-
         # Step 1.2 - Document type selection (Auto-detect or Hardcoded)
         if ENABLE_DOCUMENT_TYPE_DETECTION:
             print(f"📄 Step 1.2: Auto-detecting document type (RFI vs RFP)...")
@@ -321,7 +349,15 @@ class ContentExtractor:
             print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
                 
         print(f"📋 Step 2: Creating text chunks with LLM metadata using SimpleChunker...")
-        self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
+        # OLD CODE:
+        # self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
+        
+        # NEW CODE: Pass project_id to text chunker
+        self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(
+            self.text_elements, 
+            self.document_metadata, 
+            project_id
+        )
         print(f"📋 Text chunks created: {len(self.text_chunks)}")
         
         print(f"📋 Step 3: Extracting tables with section association...")
@@ -332,13 +368,35 @@ class ContentExtractor:
         
         # Create table chunks with verbalization, section mapping, and LLM metadata
         print(f"🤖 Creating table chunks with verbalization, section mapping, and LLM metadata...")
-        # ✅ Pass section_mapper to existing table_extractor
-        table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+        # OLD CODE:
+        # table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+        
+        # NEW CODE: Pass project_id to table chunker
+        table_chunks = await self.table_extractor.create_table_chunks(
+            tables, 
+            base_filename, 
+            self.document_metadata, 
+            self.section_mapper, 
+            self.text_elements, 
+            rfp_id=rfp_id, 
+            project_id=project_id
+        )
 
         # Create image chunks with verbalization, section mapping, and LLM metadata
         print(f"🤖 Creating image chunks with verbalization, section mapping, and LLM metadata...")
-        # ✅ Pass section_mapper to existing image_extractor
-        image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+        # OLD CODE:
+        # image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+        
+        # NEW CODE: Pass project_id to image chunker
+        image_chunks = await self.image_extractor.create_image_chunks(
+            figures, 
+            base_filename, 
+            self.document_metadata, 
+            self.section_mapper, 
+            self.text_elements, 
+            rfp_id=rfp_id, 
+            project_id=project_id
+        )
 
         # Combine all chunks
         all_chunks = self.text_chunks + table_chunks + image_chunks
@@ -380,6 +438,7 @@ class ContentExtractor:
             "document_metadata": self.document_metadata,  # Include LLM-extracted metadata in response
             "document_type": self.document_type,  # Include detected document type
             "document_type_info": self.document_type_info,  # Include detection details
+            "project_id": project_id,  # NEW: Include project_id in response
             "stats": {
                 "text_count": len(self.text_chunks),
                 "table_count": len(table_chunks),
