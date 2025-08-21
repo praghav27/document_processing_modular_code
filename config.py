@@ -88,9 +88,9 @@ AZURE_AI_SEARCH_KEY = os.getenv("AZURE_AI_SEARCH_KEY")
 AZURE_AI_SEARCH_RFI_INDEX_NAME= os.getenv("AZURE_AI_SEARCH_RFI_INDEX_NAME")
 AZURE_AI_SEARCH_RFP_INDEX_NAME=os.getenv("AZURE_AI_SEARCH_RFP_INDEX_NAME")
 
-# NEW: TIP Document Azure AI Search
-AZURE_AI_SEARCH_TIP_ENDPOINT = os.getenv("AZURE_AI_SEARCH_TIP_ENDPOINT")
-AZURE_AI_SEARCH_TIP_INDEX_NAME = os.getenv("AZURE_AI_SEARCH_TIP_INDEX_NAME", "tip_document_index")
+# NEW: TIP Document Azure AI Search - FIXED TO USE YOUR ENDPOINT
+AZURE_AI_SEARCH_TIP_ENDPOINT = "https://ttdevopscacdevsrch-rfprfi.search.windows.net"
+AZURE_AI_SEARCH_TIP_INDEX_NAME = "tip_document_index"
 
 # Storage paths
 TABLES_DIR = "extracted_content/tables"

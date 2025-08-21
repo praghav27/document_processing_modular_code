@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import asyncio
 from main import document_processor
-from processors.tip.tip_processor import TIPProcessor
+from simple_tip_processor import SimpleTIPProcessor  # Import simple TIP processor
 from config import AZURE_DOC_INTELLIGENCE_ENDPOINT, AZURE_DOC_INTELLIGENCE_KEY
 
 # Page configuration
@@ -108,7 +108,7 @@ st.markdown('<h1 class="main-header">📄 Enhanced Document Processor</h1>', uns
 st.markdown("### 🔧 Select Processing Mode")
 processing_mode = st.selectbox(
     "Choose processing type:",
-    ["Enhanced RFP/RFI Processing", "TIP Document Processing"],
+    ["Enhanced RFP/RFI Processing", "Simple TIP Document Processing"],
     index=0 if st.session_state.processing_mode == "Enhanced RFP/RFI" else 1
 )
 
@@ -123,7 +123,7 @@ if processing_mode != st.session_state.processing_mode:
 if processing_mode == "Enhanced RFP/RFI Processing":
     st.markdown('<p style="text-align: center; color: #666;">Upload RFP/RFI documents and extract text, tables, and images with advanced chunking and section association</p>', unsafe_allow_html=True)
 else:
-    st.markdown('<p style="text-align: center; color: #666;">Upload TIP documents to extract metadata and store in Azure AI Search for easy searching</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #666;">Upload TIP documents to extract metadata (doc_id, project_name, prepared_by, stations_tip, scope_of_work, qa_qc_info) and store in Azure AI Search</p>', unsafe_allow_html=True)
 
 # Sidebar configuration
 with st.sidebar:
@@ -135,7 +135,7 @@ with st.sidebar:
         if processing_mode == "Enhanced RFP/RFI Processing":
             st.info("🎯 Using Enhanced Layout Model for extraction")
         else:
-            st.info("🎯 Using TIP Metadata Extraction")
+            st.info("🎯 Using TIP Metadata Extraction with Azure OpenAI")
     else:
         st.error("❌ Azure credentials not configured")
         st.info("Please set your Azure credentials in config.py or environment variables")
@@ -151,9 +151,13 @@ with st.sidebar:
         else:
             # TIP mode statistics
             tip_metadata = st.session_state.processed_data.get("tip_metadata", {})
+            content_extracted = st.session_state.processed_data.get("content_extracted", {})
             st.subheader("📊 TIP Document Stats")
             st.metric("Metadata Fields", len(tip_metadata))
             st.metric("Document ID", tip_metadata.get("doc_id", "Not Found"))
+            st.metric("Text Elements", content_extracted.get("text_elements", 0))
+            st.metric("Tables Found", content_extracted.get("tables", 0))
+            st.metric("Images Found", content_extracted.get("images", 0))
             if tip_metadata.get("scope_of_work"):
                 scope_words = len(tip_metadata["scope_of_work"].split())
                 st.metric("Scope Word Count", scope_words)
@@ -192,7 +196,7 @@ with col1:
             button_label = "🚀 Process Document with Enhanced Chunking"
             button_help = "Process with RFP/RFI detection and chunking"
         else:
-            button_label = "🚀 Process TIP Document & Upload to Search"
+            button_label = "🚀 Process TIP Document & Extract Metadata"
             button_help = "Extract TIP metadata and upload to Azure AI Search"
         
         if st.button(button_label, type="primary", help=button_help):
@@ -220,7 +224,7 @@ with col1:
                     else:
                         # TIP processing
                         with st.spinner("Processing TIP document with metadata extraction..."):
-                            tip_processor = TIPProcessor()
+                            tip_processor = SimpleTIPProcessor()
                             result = asyncio.run(tip_processor.process_document(uploaded_file, update_progress))
                         
                         st.session_state.processed_data = result
@@ -496,99 +500,6 @@ if st.session_state.processed_data:
                 total_elements = len(text_chunks) + len(tables) + len(images)
                 st.metric("📋 Total Elements", total_elements)
             
-            # Section Analysis
-            st.subheader("🎯 Section Analysis")
-            
-            sections_found = set()
-            section_stats = {}
-            
-            for chunk in text_chunks:
-                section_name = chunk.get('section_name', 'Unknown')
-                if section_name and section_name != 'Unknown':
-                    sections_found.add(section_name)
-                    if section_name not in section_stats:
-                        section_stats[section_name] = {
-                            'text_chunks': 0,
-                            'tables': 0,
-                            'images': 0,
-                            'total_words': 0
-                        }
-                    section_stats[section_name]['text_chunks'] += 1
-                    section_stats[section_name]['total_words'] += chunk.get('metadata', {}).get('word_count', 0)
-            
-            # Add tables and images to section stats
-            for table in tables:
-                section_info = table.get('section_info', {})
-                section_content = section_info.get('section_content', 'Unknown')[:50]  # Truncated content
-                if section_content and section_content != 'Unknown':
-                    if section_content not in section_stats:
-                        section_stats[section_content] = {
-                            'text_chunks': 0,
-                            'tables': 0,
-                            'images': 0,
-                            'total_words': 0
-                        }
-                    section_stats[section_content]['tables'] += 1
-            
-            for image in images:
-                section_info = image.get('section_info', {})
-                section_content = section_info.get('section_content', 'Unknown')[:50]  # Truncated content
-                if section_content and section_content != 'Unknown':
-                    if section_content not in section_stats:
-                        section_stats[section_content] = {
-                            'text_chunks': 0,
-                            'tables': 0,
-                            'images': 0,
-                            'total_words': 0
-                        }
-                    section_stats[section_content]['images'] += 1
-            
-            if section_stats:
-                st.write(f"**Found {len(section_stats)} sections with content:**")
-                
-                # Create section analysis table
-                section_df = pd.DataFrame.from_dict(section_stats, orient='index')
-                section_df = section_df.reset_index()
-                section_df.columns = ['Section', 'Text Chunks', 'Tables', 'Images', 'Total Words']
-                section_df['Total Elements'] = section_df['Text Chunks'] + section_df['Tables'] + section_df['Images']
-                
-                st.dataframe(section_df, use_container_width=True)
-                
-                # Section distribution chart
-                if len(section_df) > 0:
-                    st.subheader("📊 Content Distribution by Section")
-                    
-                    # Create visualization data
-                    chart_data = section_df.set_index('Section')[['Text Chunks', 'Tables', 'Images']]
-                    st.bar_chart(chart_data)
-            else:
-                st.info("No sections identified in the document")
-            
-            # Page Analysis
-            st.subheader("📄 Page Analysis")
-            
-            page_stats = {}
-            
-            # Count by page
-            for table in tables:
-                page = table.get('page_number', 1)
-                if page not in page_stats:
-                    page_stats[page] = {'tables': 0, 'images': 0}
-                page_stats[page]['tables'] += 1
-            
-            for image in images:
-                page = image.get('page_number', 1)
-                if page not in page_stats:
-                    page_stats[page] = {'tables': 0, 'images': 0}
-                page_stats[page]['images'] += 1
-            
-            if page_stats:
-                st.write("**Content by Page:**")
-                
-                for page in sorted(page_stats.keys()):
-                    stats = page_stats[page]
-                    st.write(f"📄 Page {page}: {stats['tables']} tables, {stats['images']} images")
-            
             # Processing Summary
             st.subheader("⚙️ Processing Summary")
             
@@ -601,7 +512,6 @@ if st.session_state.processed_data:
             <strong>📝 Enhanced Text Chunks:</strong> {len(text_chunks)}<br/>
             <strong>📊 Tables with Context:</strong> {len(tables)}<br/>
             <strong>🖼️ Images with Context:</strong> {len(images)}<br/>
-            <strong>🎯 Sections Identified:</strong> {len(sections_found)}<br/>
             <strong>📋 Total Content Elements:</strong> {total_elements}
             </div>''', unsafe_allow_html=True)
         
@@ -645,34 +555,6 @@ if st.session_state.processed_data:
                         )
                 else:
                     st.info("No raw text file")
-                    
-            # Table files
-            st.markdown("**📊 Table Files:**")
-            tables_dir = f"extracted_content/tables"
-            if os.path.exists(tables_dir):
-                table_files = [f for f in os.listdir(tables_dir) if f.startswith(base_filename)]
-                if table_files:
-                    for table_file in table_files:
-                        table_path = os.path.join(tables_dir, table_file)
-                        st.success(f"✅ Table: {table_path}")
-                else:
-                    st.info("No table files")
-            else:
-                st.info("No tables directory")
-                
-            # Image files
-            st.markdown("**🖼️ Image Files:**")
-            images_dir = f"extracted_content/images"
-            if os.path.exists(images_dir):
-                image_files = [f for f in os.listdir(images_dir) if f.startswith(base_filename)]
-                if image_files:
-                    for image_file in image_files:
-                        image_path = os.path.join(images_dir, image_file)
-                        st.success(f"✅ Image: {image_path}")
-                else:
-                    st.info("No image files")
-            else:
-                st.info("No images directory")
     
     else:
         # TIP MODE DISPLAY
@@ -686,7 +568,7 @@ if st.session_state.processed_data:
             tip_metadata = st.session_state.processed_data.get("tip_metadata", {})
             
             if tip_metadata:
-                st.info(f"Successfully extracted {len(tip_metadata)} metadata fields")
+                st.info(f"Successfully extracted {len(tip_metadata)} metadata fields using TIP-specific prompts")
                 
                 # Display each field in a styled box
                 for field, value in tip_metadata.items():
@@ -694,7 +576,14 @@ if st.session_state.processed_data:
                         # Special handling for scope of work
                         with st.expander(f"📋 {field.replace('_', ' ').title()} ({len(value.split())} words)"):
                             st.markdown(f'''<div class="tip-metadata-box">
-                            <strong>Scope of Work:</strong><br/>
+                            <strong>Scope of Work (300 words technical summary):</strong><br/>
+                            {value}
+                            </div>''', unsafe_allow_html=True)
+                    elif field == "stations_tip":
+                        # Special handling for stations/TIP
+                        with st.expander(f"📋 {field.replace('_', ' ').title()}"):
+                            st.markdown(f'''<div class="tip-metadata-box">
+                            <strong>Stations/TIP (aux, ele, eqp, etc.):</strong><br/>
                             {value}
                             </div>''', unsafe_allow_html=True)
                     else:
@@ -718,71 +607,18 @@ if st.session_state.processed_data:
             st.subheader("🔍 Azure AI Search Index Status")
             
             upload_success = st.session_state.processed_data.get("azure_search_uploaded", False)
+            tip_metadata = st.session_state.processed_data.get("tip_metadata", {})
             
             if upload_success:
                 st.success("✅ TIP metadata successfully uploaded to Azure AI Search")
                 
                 # Display search index information
-                st.markdown(f'''<div class="content-box">
-                <strong>📊 Search Index Details:</strong><br/>
-                • Index Name: tip_document_index<br/>
-                • Document ID: {tip_metadata.get('doc_id', 'Not Found')}<br/>
-                • Project Name: {tip_metadata.get('project_name', 'Not Specified')}<br/>
-                • Upload Status: ✅ Success<br/>
-                • Search Available: Yes
-                </div>''', unsafe_allow_html=True)
-                
-                st.info("💡 You can now search for this document in the Azure AI Search index manually")
-                
-            else:
-                st.error("❌ Failed to upload to Azure AI Search")
-                st.info("The metadata was extracted but could not be uploaded to the search index")
-        
-        with tab3:
-            st.subheader("💾 TIP Storage Information")
-            
-            # Display processing statistics
-            stats = st.session_state.processed_data.get("stats", {})
-            processing_method = st.session_state.processed_data.get("processing_method", "tip_processing")
-            local_path = st.session_state.processed_data.get("local_storage_path", "Not saved")
-            
-            st.markdown(f'''<div class="storage-info">
-            <strong>📊 Processing Statistics:</strong><br/>
-            • Text Elements Processed: {stats.get('text_elements_extracted', 0)}<br/>
-            • Metadata Fields Extracted: {stats.get('metadata_fields_extracted', 0)}<br/>
-            • Document ID: {stats.get('doc_id', 'Not Found')}<br/>
-            • Project Name: {stats.get('project_name', 'Not Specified')}<br/>
-            • Scope Word Count: {stats.get('scope_word_count', 0)}<br/>
-            • Processing Method: {processing_method}
-            </div>''', unsafe_allow_html=True)
-            
-            # Local storage info
-            if local_path and local_path != "Not saved":
-                st.success(f"✅ Local storage: {local_path}")
-                
-                # Offer download of local file
-                if os.path.exists(local_path):
-                    with open(local_path, 'rb') as f:
-                        st.download_button(
-                            label="📥 Download Local TIP Metadata File",
-                            data=f.read(),
-                            file_name=os.path.basename(local_path),
-                            mime="application/json"
-                        )
-            else:
-                st.warning("⚠️ Local storage path not available")
-            
-            # Processing summary
-            st.subheader("⚙️ TIP Processing Summary")
-            filename = st.session_state.processed_data.get("filename", "unknown")
-            file_extension = st.session_state.processed_data.get("file_extension", "unknown")
-            
-            st.markdown(f'''<div class="content-box">
-            <strong>🔧 Processing Details:</strong><br/>
-            <strong>📁 File Name:</strong> {filename}<br/>
-            <strong>📁 File Extension:</strong> {file_extension}<br/>
-            <strong>🤖 Method:</strong> Azure Document Intelligence + Azure OpenAI<br/>
-            <strong>📊 Fields Extracted:</strong> 6 TIP metadata fields<br/>
-            <strong>💾 Local Storage:</strong> {'✅ Saved' if local_path != 'Not saved' else '❌ Failed'}<br/>
-            <strong>🔍 Search Upload:</strong> {'✅ Success' if upload_success else '❌ Failed'}
-            </div>''', unsafe_allow_html=True)
+                # st.markdown(f'''<div class="content-box">
+                # <strong>📊 Search Index Details:</strong><br/>
+                # • Index Name: tip_document_index<br/>
+                # • Document ID: {tip_metadata.get('doc_id', 'Not Found')}<br/>
+                # • Project Name: {tip_metadata.get('project_name', 'Not Specified')}<br/>
+                # • Upload Status: ✅ Success<br/>
+                # • Search Available: Yes<br/>
+                # • Search Endpoint: https://ttdevopscacdevsrch-rfprfi.search.windows.net<br/>
+                # • Fields: doc_id (filterable, searchable), project_name (searchable, filterable, facetable), prepared_by (searchable, filterable, facetable), stations_tip (searchable, filterable, facetable), scope_of_work (searchable), qa_qc_info (search
