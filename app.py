@@ -1,6 +1,3 @@
-
-
-
 import streamlit as st
 import os
 import pandas as pd
@@ -647,4 +644,145 @@ if st.session_state.processed_data:
                             mime="text/plain"
                         )
                 else:
-                    st.info
+                    st.info("No raw text file")
+                    
+            # Table files
+            st.markdown("**📊 Table Files:**")
+            tables_dir = f"extracted_content/tables"
+            if os.path.exists(tables_dir):
+                table_files = [f for f in os.listdir(tables_dir) if f.startswith(base_filename)]
+                if table_files:
+                    for table_file in table_files:
+                        table_path = os.path.join(tables_dir, table_file)
+                        st.success(f"✅ Table: {table_path}")
+                else:
+                    st.info("No table files")
+            else:
+                st.info("No tables directory")
+                
+            # Image files
+            st.markdown("**🖼️ Image Files:**")
+            images_dir = f"extracted_content/images"
+            if os.path.exists(images_dir):
+                image_files = [f for f in os.listdir(images_dir) if f.startswith(base_filename)]
+                if image_files:
+                    for image_file in image_files:
+                        image_path = os.path.join(images_dir, image_file)
+                        st.success(f"✅ Image: {image_path}")
+                else:
+                    st.info("No image files")
+            else:
+                st.info("No images directory")
+    
+    else:
+        # TIP MODE DISPLAY
+        st.header("📋 TIP Document Metadata")
+        
+        # Create tabs for TIP mode
+        tab1, tab2, tab3 = st.tabs(["📝 Extracted Metadata", "🔍 Search Index Info", "💾 Storage Info"])
+        
+        with tab1:
+            st.subheader("📝 TIP Metadata Fields")
+            tip_metadata = st.session_state.processed_data.get("tip_metadata", {})
+            
+            if tip_metadata:
+                st.info(f"Successfully extracted {len(tip_metadata)} metadata fields")
+                
+                # Display each field in a styled box
+                for field, value in tip_metadata.items():
+                    if field == "scope_of_work":
+                        # Special handling for scope of work
+                        with st.expander(f"📋 {field.replace('_', ' ').title()} ({len(value.split())} words)"):
+                            st.markdown(f'''<div class="tip-metadata-box">
+                            <strong>Scope of Work:</strong><br/>
+                            {value}
+                            </div>''', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'''<div class="tip-metadata-box">
+                        <strong>📋 {field.replace('_', ' ').title()}:</strong> {value}
+                        </div>''', unsafe_allow_html=True)
+                
+                # Download metadata as JSON
+                import json
+                metadata_json = json.dumps(tip_metadata, indent=2, ensure_ascii=False)
+                st.download_button(
+                    label="📥 Download TIP Metadata (JSON)",
+                    data=metadata_json,
+                    file_name=f"{os.path.splitext(st.session_state.current_file)[0]}_tip_metadata.json",
+                    mime="application/json"
+                )
+            else:
+                st.warning("No TIP metadata extracted")
+        
+        with tab2:
+            st.subheader("🔍 Azure AI Search Index Status")
+            
+            upload_success = st.session_state.processed_data.get("azure_search_uploaded", False)
+            
+            if upload_success:
+                st.success("✅ TIP metadata successfully uploaded to Azure AI Search")
+                
+                # Display search index information
+                st.markdown(f'''<div class="content-box">
+                <strong>📊 Search Index Details:</strong><br/>
+                • Index Name: tip_document_index<br/>
+                • Document ID: {tip_metadata.get('doc_id', 'Not Found')}<br/>
+                • Project Name: {tip_metadata.get('project_name', 'Not Specified')}<br/>
+                • Upload Status: ✅ Success<br/>
+                • Search Available: Yes
+                </div>''', unsafe_allow_html=True)
+                
+                st.info("💡 You can now search for this document in the Azure AI Search index manually")
+                
+            else:
+                st.error("❌ Failed to upload to Azure AI Search")
+                st.info("The metadata was extracted but could not be uploaded to the search index")
+        
+        with tab3:
+            st.subheader("💾 TIP Storage Information")
+            
+            # Display processing statistics
+            stats = st.session_state.processed_data.get("stats", {})
+            processing_method = st.session_state.processed_data.get("processing_method", "tip_processing")
+            local_path = st.session_state.processed_data.get("local_storage_path", "Not saved")
+            
+            st.markdown(f'''<div class="storage-info">
+            <strong>📊 Processing Statistics:</strong><br/>
+            • Text Elements Processed: {stats.get('text_elements_extracted', 0)}<br/>
+            • Metadata Fields Extracted: {stats.get('metadata_fields_extracted', 0)}<br/>
+            • Document ID: {stats.get('doc_id', 'Not Found')}<br/>
+            • Project Name: {stats.get('project_name', 'Not Specified')}<br/>
+            • Scope Word Count: {stats.get('scope_word_count', 0)}<br/>
+            • Processing Method: {processing_method}
+            </div>''', unsafe_allow_html=True)
+            
+            # Local storage info
+            if local_path and local_path != "Not saved":
+                st.success(f"✅ Local storage: {local_path}")
+                
+                # Offer download of local file
+                if os.path.exists(local_path):
+                    with open(local_path, 'rb') as f:
+                        st.download_button(
+                            label="📥 Download Local TIP Metadata File",
+                            data=f.read(),
+                            file_name=os.path.basename(local_path),
+                            mime="application/json"
+                        )
+            else:
+                st.warning("⚠️ Local storage path not available")
+            
+            # Processing summary
+            st.subheader("⚙️ TIP Processing Summary")
+            filename = st.session_state.processed_data.get("filename", "unknown")
+            file_extension = st.session_state.processed_data.get("file_extension", "unknown")
+            
+            st.markdown(f'''<div class="content-box">
+            <strong>🔧 Processing Details:</strong><br/>
+            <strong>📁 File Name:</strong> {filename}<br/>
+            <strong>📁 File Extension:</strong> {file_extension}<br/>
+            <strong>🤖 Method:</strong> Azure Document Intelligence + Azure OpenAI<br/>
+            <strong>📊 Fields Extracted:</strong> 6 TIP metadata fields<br/>
+            <strong>💾 Local Storage:</strong> {'✅ Saved' if local_path != 'Not saved' else '❌ Failed'}<br/>
+            <strong>🔍 Search Upload:</strong> {'✅ Success' if upload_success else '❌ Failed'}
+            </div>''', unsafe_allow_html=True)

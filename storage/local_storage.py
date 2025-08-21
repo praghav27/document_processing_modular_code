@@ -82,56 +82,6 @@ class LocalStorage:
         print(f"💾 Saved figure text: {txt_path}")
         return txt_path
    
-    # def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> str:
-        """Save enhanced text chunks with verbalization and LLM metadata as JSON file"""
-        json_filename = f"{filename}_text_chunks.json"
-        json_path = os.path.join(TEXT_DIR, json_filename)
-       
-        # Extract LLM metadata from chunks if available
-        llm_metadata = {}
-        if text_chunks and text_chunks[0].get('metadata', {}).get('llm_extracted_metadata'):
-            llm_metadata = text_chunks[0]['metadata']['llm_extracted_metadata']
-       
-        # Convert chunks to serializable format with enhanced metadata including LLM data
-        chunk_data = {
-            "filename": filename,
-            "total_chunks": len(text_chunks),
-            "processing_method": "enhanced_chunking_with_verbalization_and_llm_metadata",
-            "llm_extracted_metadata": llm_metadata,  # NEW: Store LLM metadata at document level
-            "chunk_types": {
-                "text": len([c for c in text_chunks if c['content_type'] == 'text']),
-                "table": len([c for c in text_chunks if c['content_type'] == 'table']),
-                "image": len([c for c in text_chunks if c['content_type'] == 'image'])
-            },
-            "created_at": text_chunks[0].get("metadata", {}).get("created_at", "") if text_chunks else "",
-            "chunks": []
-        }
-       
-        for chunk in text_chunks:
-            chunk_info = {
-                "chunk_id": chunk.get("chunk_id", ""),
-                "file_name": chunk.get("file_name", ""),
-                "section_name": chunk.get("section_name", ""),
-                "section_no": chunk.get("section_no", ""),
-                "domain": chunk.get("domain", ""),
-                "content_type": chunk.get("content_type", "text"),
-                "author": chunk.get("author", ""),  # Now includes LLM-extracted vendor_name
-                "content": chunk.get("content", ""),
-                "verbalized_content": chunk.get("verbalized_content", ""),
-                'rfp_id': chunk.get("rfp_id", ""),
-                "metadata": chunk.get("metadata", {})
-            }
-            chunk_data["chunks"].append(chunk_info)
-       
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(chunk_data, f, indent=2, ensure_ascii=False)
-       
-        print(f"💾 Saved enhanced text chunks with LLM metadata: {json_path}")
-        print(f"   📊 Chunk breakdown: {chunk_data['chunk_types']['text']} text, {chunk_data['chunk_types']['table']} table, {chunk_data['chunk_types']['image']} image")
-        if llm_metadata:
-            print(f"   🤖 LLM Metadata: Project='{llm_metadata.get('project_title', 'N/A')[:30]}...', Vendor='{llm_metadata.get('vendor_name', 'N/A')}', Domain='{llm_metadata.get('domain_category', 'N/A')}'")
-        return chunk_data,json_path
-   
     def save_text_chunks(self, text_chunks: List[Dict], filename: str) -> tuple:
         """Save enhanced text chunks with verbalization and LLM metadata as JSON file - Returns (chunk_data, json_path)"""
         json_filename = f"{filename}_text_chunks.json"
@@ -197,6 +147,71 @@ class LocalStorage:
        
         print(f"💾 Saved raw text: {txt_path}")
         return txt_path
+
+    # NEW TIP METADATA METHODS
+    def save_tip_metadata(self, tip_metadata: Dict, filename: str) -> str:
+        """Save TIP metadata as JSON file"""
+        json_filename = f"{filename}_tip_metadata.json"
+        json_path = os.path.join(TEXT_DIR, json_filename)
+        
+        tip_data = {
+            "filename": filename,
+            "extraction_method": "tip_azure_openai",
+            "tip_metadata": tip_metadata,
+            "created_at": pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(tip_data, f, indent=2, ensure_ascii=False)
+        
+        print(f"💾 Saved TIP metadata: {json_path}")
+        print(f"   🔑 Doc ID: {tip_metadata.get('doc_id', 'Not Found')}")
+        print(f"   📝 Project: {tip_metadata.get('project_name', 'Not Specified')}")
+        print(f"   🔧 Stations: {tip_metadata.get('stations_tip', 'Not Specified')[:50]}...")
+        
+        return json_path
+
+    def load_tip_metadata(self, filename: str) -> Dict:
+        """Load TIP metadata from JSON file"""
+        json_filename = f"{filename}_tip_metadata.json"
+        json_path = os.path.join(TEXT_DIR, json_filename)
+        
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            tip_metadata = data.get("tip_metadata", {})
+            print(f"📂 Loaded TIP metadata: {json_path}")
+            return tip_metadata
+            
+        except Exception as e:
+            print(f"❌ Error loading TIP metadata: {e}")
+            return {}
+
+    def get_tip_storage_summary(self, filename: str) -> Dict:
+        """Get summary of TIP document storage"""
+        base_filename = os.path.splitext(filename)[0]
+        
+        summary = {
+            "base_filename": base_filename,
+            "tip_metadata_file": None,
+            "tip_metadata_exists": False,
+            "tip_metadata": {}
+        }
+        
+        # Check for TIP metadata file
+        json_filename = f"{base_filename}_tip_metadata.json"
+        json_path = os.path.join(TEXT_DIR, json_filename)
+        
+        if os.path.exists(json_path):
+            summary["tip_metadata_file"] = json_path
+            summary["tip_metadata_exists"] = True
+            summary["tip_metadata"] = self.load_tip_metadata(base_filename)
+            
+            file_size = os.path.getsize(json_path) / 1024  # KB
+            summary["file_size_kb"] = round(file_size, 2)
+        
+        return summary
    
     def save_document_metadata(self, metadata: Dict, filename: str) -> str:
         """Save LLM-extracted document metadata separately"""
@@ -398,6 +413,8 @@ class LocalStorage:
                 return 'text_chunks_with_llm_metadata'
             elif 'llm_metadata' in filename:
                 return 'llm_extracted_metadata'
+            elif 'tip_metadata' in filename:
+                return 'tip_metadata'
             elif 'summary' in filename:
                 return 'extraction_summary'
             elif 'analysis' in filename:
@@ -431,191 +448,4 @@ class LocalStorage:
                 "image_chunks": 0,
                 "tables": 0,
                 "figures": 0,
-                "sections": 0
-            },
-            "verbalization_summary": {
-                "total_verbalized_chunks": 0,
-                "verbalized_tables": 0,
-                "verbalized_images": 0,
-                "verbalization_enabled": False
-            },
-            "llm_metadata_summary": {
-                "metadata_extracted": False,
-                "extraction_method": "none",
-                "document_metadata": {},
-                "chunks_with_llm_metadata": 0
-            },
-            "file_locations": {
-                "text_files": [],
-                "table_files": [],
-                "image_files": [],
-                "analysis_files": []
-            },
-            "storage_info": self.get_storage_summary(filename)
-        }
-       
-        # Load text chunks info
-        chunks_data = self.load_text_chunks(base_filename)
-        if chunks_data:
-            # Count chunks by type
-            text_chunks = [c for c in chunks_data if c.get('content_type') == 'text']
-            table_chunks = [c for c in chunks_data if c.get('content_type') == 'table']
-            image_chunks = [c for c in chunks_data if c.get('content_type') == 'image']
-           
-            report["content_summary"]["text_chunks"] = len(text_chunks)
-            report["content_summary"]["table_chunks"] = len(table_chunks)
-            report["content_summary"]["image_chunks"] = len(image_chunks)
-           
-            # Count verbalized chunks
-            verbalized_tables = [c for c in table_chunks if c.get('verbalized_content') and c.get('verbalized_content') != c.get('content', '')]
-            verbalized_images = [c for c in image_chunks if c.get('verbalized_content') and c.get('verbalized_content') != c.get('content', '')]
-           
-            report["verbalization_summary"]["verbalized_tables"] = len(verbalized_tables)
-            report["verbalization_summary"]["verbalized_images"] = len(verbalized_images)
-            report["verbalization_summary"]["total_verbalized_chunks"] = len(verbalized_tables) + len(verbalized_images)
-            report["verbalization_summary"]["verbalization_enabled"] = len(verbalized_tables) > 0 or len(verbalized_images) > 0
-           
-            # Count chunks with LLM metadata
-            chunks_with_llm = [c for c in chunks_data if c.get('metadata', {}).get('llm_extracted_metadata')]
-            report["llm_metadata_summary"]["chunks_with_llm_metadata"] = len(chunks_with_llm)
-           
-            # Extract sections info
-            sections = set()
-            for chunk in chunks_data:
-                if chunk.get("section_name"):
-                    sections.add(chunk["section_name"])
-            report["content_summary"]["sections"] = len(sections)
-       
-        # Load LLM metadata
-        llm_metadata = self.load_document_metadata(base_filename)
-        if llm_metadata:
-            report["llm_metadata_summary"]["metadata_extracted"] = True
-            report["llm_metadata_summary"]["extraction_method"] = "llm_azure_openai"
-            report["llm_metadata_summary"]["document_metadata"] = llm_metadata
-       
-        # Count tables and figures from files
-        storage_summary = self.get_storage_summary(filename)
-        report["content_summary"]["tables"] = len([f for f in storage_summary["files"]["tables"] if f["type"] == "table_data"])
-        report["content_summary"]["figures"] = len([f for f in storage_summary["files"]["images"] if f["type"] == "figure_image"])
-       
-        # File locations
-        report["file_locations"]["text_files"] = [f["path"] for f in storage_summary["files"]["text"]]
-        report["file_locations"]["table_files"] = [f["path"] for f in storage_summary["files"]["tables"]]
-        report["file_locations"]["image_files"] = [f["path"] for f in storage_summary["files"]["images"]]
-        report["file_locations"]["analysis_files"] = [f["path"] for f in storage_summary["files"]["analysis"]]
-       
-        return report
-   
-    def cleanup_files(self, filename: str) -> bool:
-        """Remove all files associated with a document"""
-        base_filename = os.path.splitext(filename)[0]
-        removed_files = []
-       
-        directories = [TEXT_DIR, TABLES_DIR, IMAGES_DIR]
-       
-        for directory in directories:
-            if os.path.exists(directory):
-                for file in os.listdir(directory):
-                    if file.startswith(base_filename):
-                        file_path = os.path.join(directory, file)
-                        try:
-                            os.remove(file_path)
-                            removed_files.append(file_path)
-                        except Exception as e:
-                            print(f"❌ Error removing file {file_path}: {e}")
-       
-        print(f"🗑️ Removed {len(removed_files)} files for {filename}")
-        return len(removed_files) > 0
-   
-    def get_verbalization_stats(self, filename: str) -> Dict:
-        """Get detailed verbalization statistics for a document"""
-        base_filename = os.path.splitext(filename)[0]
-        chunks_data = self.load_text_chunks(base_filename)
-       
-        stats = {
-            "total_chunks": 0,
-            "verbalized_chunks": 0,
-            "chunk_types": {
-                "text": {"total": 0, "verbalized": 0},
-                "table": {"total": 0, "verbalized": 0},
-                "image": {"total": 0, "verbalized": 0}
-            },
-            "verbalization_rate": 0.0,
-            "avg_verbalization_length": 0,
-            "verbalization_enabled": False
-        }
-       
-        if chunks_data:
-            stats["total_chunks"] = len(chunks_data)
-           
-            verbalized_lengths = []
-           
-            for chunk in chunks_data:
-                content_type = chunk.get('content_type', 'text')
-                stats["chunk_types"][content_type]["total"] += 1
-               
-                # Check if chunk is verbalized (different from original content)
-                original = chunk.get('content', '')
-                verbalized = chunk.get('verbalized_content', '')
-               
-                if verbalized and verbalized != original:
-                    stats["verbalized_chunks"] += 1
-                    stats["chunk_types"][content_type]["verbalized"] += 1
-                    verbalized_lengths.append(len(verbalized))
-           
-            if stats["total_chunks"] > 0:
-                stats["verbalization_rate"] = stats["verbalized_chunks"] / stats["total_chunks"]
-           
-            if verbalized_lengths:
-                stats["avg_verbalization_length"] = sum(verbalized_lengths) / len(verbalized_lengths)
-                stats["verbalization_enabled"] = True
-       
-        return stats
-   
-    def get_llm_metadata_stats(self, filename: str) -> Dict:
-        """Get detailed LLM metadata statistics for a document"""
-        base_filename = os.path.splitext(filename)[0]
-        chunks_data = self.load_text_chunks(base_filename)
-        llm_metadata = self.load_document_metadata(base_filename)
-       
-        stats = {
-            "metadata_extracted": False,
-            "extraction_method": "none",
-            "document_metadata": {},
-            "chunks_with_metadata": 0,
-            "metadata_fields_populated": 0,
-            "metadata_completeness": 0.0,
-            "chunk_integration": {
-                "text": {"total": 0, "with_metadata": 0},
-                "table": {"total": 0, "with_metadata": 0},
-                "image": {"total": 0, "with_metadata": 0}
-            }
-        }
-       
-        # Check document-level metadata
-        if llm_metadata:
-            stats["metadata_extracted"] = True
-            stats["extraction_method"] = "llm_azure_openai"
-            stats["document_metadata"] = llm_metadata
-           
-            # Count populated fields
-            required_fields = ['project_title', 'client_name', 'vendor_name', 'submission_date', 'domain_category', 'service_category']
-            populated_fields = sum(1 for field in required_fields if llm_metadata.get(field) not in [None, '', 'Not Specified', 'Other'])
-            stats["metadata_fields_populated"] = populated_fields
-            stats["metadata_completeness"] = populated_fields / len(required_fields) if required_fields else 0
-       
-        # Check chunk-level integration
-        if chunks_data:
-            for chunk in chunks_data:
-                content_type = chunk.get('content_type', 'text')
-                stats["chunk_integration"][content_type]["total"] += 1
-               
-                # Check if chunk has LLM metadata integrated
-                if chunk.get('metadata', {}).get('llm_extracted_metadata'):
-                    stats["chunks_with_metadata"] += 1
-                    stats["chunk_integration"][content_type]["with_metadata"] += 1
-       
-        return stats
-    
-    
- 
+                "sections
