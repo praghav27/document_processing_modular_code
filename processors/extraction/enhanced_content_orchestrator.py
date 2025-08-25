@@ -1,0 +1,558 @@
+
+
+
+# import os
+# from typing import Dict, List
+# # from storage.local_storage import LocalStorage
+# from storage.storage_factory import get_storage_instance
+
+# # from llm_metadata.power_extractor import PowerMetadataExtractor
+# # from llm_metadata.rfi_extractor import RFIMetadataExtractor
+# from llm_metadata import RFIExtractor, RFPExtractor
+# from llm_metadata.document_type_detector import DocumentTypeDetector
+# from .text_extractor import TextExtractor  # Use existing file
+# from .table_extractor import TableExtractor  # Use existing file
+# from .image_extractor import ImageExtractor  # Use existing file
+# from .section_mapper import SectionMapper  # Use existing file
+# from data_indexing.data_to_rfp_indexer import AzureSearchRFPResponseUploader
+# from data_indexing.data_to_rfi_indexer import AzureSearchRFPRequestUploader
+# from config import (AZURE_AI_SEARCH_ENDPOINT, AZURE_AI_SEARCH_KEY, AZURE_AI_SEARCH_RFI_INDEX_NAME,
+#     AZURE_AI_SEARCH_RFP_INDEX_NAME, ENABLE_DOCUMENT_TYPE_DETECTION, DEFAULT_DOCUMENT_TYPE)
+
+
+# class ContentExtractor:
+#     """Extract and process content from Azure Document Intelligence results with verbalization and LLM metadata extraction"""
+    
+#     def __init__(self):
+#         # self.storage = LocalStorage()
+#         self.storage = get_storage_instance()
+#         self.text_elements = []  # Store for section association
+#         self.text_chunks = []  # Store text chunks for section mapping
+#         self.document_metadata = {}  # Store LLM-extracted document metadata
+#         self.document_type = "RFP"  # Default document type
+#         self.document_type_info = {}  # Store document type detection results
+        
+#         # Initialize document type detector
+#         self.type_detector = DocumentTypeDetector()
+#         self.data_indexing_RFP_request= AzureSearchRFPRequestUploader()
+#         self.data_indexing_RFP_response = AzureSearchRFPResponseUploader()
+#         # Initialize modular extractors (using existing files)
+#         self.text_extractor = TextExtractor()
+#         self.table_extractor = TableExtractor()
+#         self.image_extractor = ImageExtractor()
+#         self.section_mapper = SectionMapper()  # ✅ Keep section mapping separate
+    
+#     async def extract_all_content(self, result, filename: str, client=None, operation_id=None) -> Dict:
+#         """Extract text, tables, and images from Azure Document Intelligence result with verbalization and LLM metadata extraction"""
+#         base_filename = os.path.splitext(filename)[0]
+        
+#         print(f"🔍 Extracting content from {filename}...")
+#         print(f"📋 Debug: client={client is not None}, operation_id={operation_id}")
+        
+#         # Extract content using Azure DI
+#         print(f"📋 Step 1: Extracting text elements...")
+#         self.text_elements = self.text_extractor.extract_text(result)
+#         print(f"📋 Text elements extracted: {len(self.text_elements)}")
+
+#         all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
+#         rfp_id = self.text_extractor.extract_rfp_id_from_text(all_text)
+#         print(f"🔑 Extracted RFP ID for all chunks: {rfp_id}")
+        
+#         # # NEW: Step 1.2 - Detect document type (RFI vs RFP)
+#         # print(f"📄 Step 1.2: Detecting document type (RFI vs RFP)...")
+#         # self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+#         # self.document_type = self.document_type_info.get('document_type', 'RFP')
+#         # self.type_detector.print_detection_summary(self.document_type_info)
+        
+#         # # NEW: Step 1.5 - Extract document metadata using appropriate extractor
+#         # if self.document_type == "RFI":
+#         #     print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
+#         #     rfi_extractor = RFIExtractor()
+#         #     #  rfi_extractor = RFIMetadataExtractor()
+#         #     self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
+#         #     print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
+#         # else:
+#         #     print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
+#         #     rfp_extractor = RFPExtractor()
+#         #     # rfp_extractor = PowerMetadataExtractor()
+#         #     self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
+#         #     print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+
+#         # Step 1.2 - Document type selection (Auto-detect or Hardcoded)
+#         if ENABLE_DOCUMENT_TYPE_DETECTION:
+#             print(f"📄 Step 1.2: Auto-detecting document type (RFI vs RFP)...")
+#             self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+#             # self.document_type = self.document_type_info.get('document_type', 'RFP')
+#             document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+#             self.storage.set_project_context(filename, document_type_folder)
+#             self.type_detector.print_detection_summary(self.document_type_info)
+#         else:
+#             self.document_type = DEFAULT_DOCUMENT_TYPE
+#             print(f"🔒 HARDCODED: Using {self.document_type} extractor (detection disabled)")
+#             self.document_type_info = {
+#                 'document_type': self.document_type,
+#                 'confidence': 1.0,
+#                 'reasoning': 'Hardcoded configuration setting'
+#             }
+#         document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+#         self.storage.set_project_context(filename, document_type_folder)    
+
+#         # Step 1.5 - Extract document metadata using selected extractor
+#         if self.document_type == "RFI":
+#             print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
+#             rfi_extractor = RFIExtractor()
+#             self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
+#             print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
+#         else:
+#             print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
+#             rfp_extractor = RFPExtractor()
+#             self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
+#             print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+                
+#         print(f"📋 Step 2: Creating text chunks with LLM metadata using SimpleChunker...")
+#         self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
+#         print(f"📋 Text chunks created: {len(self.text_chunks)}")
+        
+#         print(f"📋 Step 3: Extracting tables with section association...")
+#         tables = self.table_extractor.extract_tables(result, base_filename, self.section_mapper, self.storage)
+
+#         print(f"📋 Step 4: Extracting figures with section association...")
+#         figures = self.image_extractor.extract_figures(result, base_filename, client, operation_id, self.section_mapper, self.text_elements, self.storage)
+        
+#         # Create table chunks with verbalization, section mapping, and LLM metadata
+#         print(f"🤖 Creating table chunks with verbalization, section mapping, and LLM metadata...")
+#         # ✅ Pass section_mapper to existing table_extractor
+#         table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+
+#         # Create image chunks with verbalization, section mapping, and LLM metadata
+#         print(f"🤖 Creating image chunks with verbalization, section mapping, and LLM metadata...")
+#         # ✅ Pass section_mapper to existing image_extractor
+#         image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+
+#         # Combine all chunks
+#         all_chunks = self.text_chunks + table_chunks + image_chunks
+        
+#         # Create all text content for raw text storage
+#         all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
+        
+#         if all_chunks:
+#                 print(f"📋 Saving enhanced text chunks to local storage...")
+#                 chunk_data,json_path=self.storage.save_text_chunks(all_chunks, base_filename)
+#                 # print(chunk_data)
+#                 if chunk_data and self.document_type == "RFI":
+#                     self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
+#                     print(f"Data Uploaded to the Azure AI Search")
+#                 else:
+#                     self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
+#                     print(f"Data Uploaded to the Azure AI Search")
+#         print(f"✅ Content extraction complete!")
+
+#         # Save text content to local storage
+#         if all_text.strip():
+#             self.storage.save_raw_text(all_text, base_filename)
+        
+#         # Save enhanced text chunks to local storage (now includes LLM metadata)
+#         if all_chunks:
+#             self.storage.save_text_chunks(all_chunks, base_filename)
+        
+#         print(f"✅ Content extraction complete!")
+        
+#         # Print debug information
+#         self._print_extraction_debug(all_text, self.text_chunks, tables, figures, table_chunks, image_chunks)
+        
+#         return {
+#             "text": all_text,
+#             "text_chunks": all_chunks,
+#             "tables": tables,
+#             "images": figures,
+#             "raw_text": all_text,
+#             "document_metadata": self.document_metadata,  # Include LLM-extracted metadata in response
+#             "document_type": self.document_type,  # Include detected document type
+#             "document_type_info": self.document_type_info,  # Include detection details
+#             "stats": {
+#                 "text_count": len(self.text_chunks),
+#                 "table_count": len(table_chunks),
+#                 "image_count": len(image_chunks),
+#                 "total_chunks": len(all_chunks)
+#             }
+#         }
+    
+#     def _print_extraction_debug(self, all_text, text_chunks, tables, figures, table_chunks, image_chunks):
+#         """Print comprehensive debug information with LLM metadata - FULL CONTENT DISPLAY INCLUDING RFI/RFP DETECTION"""
+        
+#         # Print Document Type Detection Results FIRST
+#         print(f"\n{'='*80}")
+#         print(f"📄 DOCUMENT TYPE DETECTION RESULTS")
+#         print(f"{'='*80}")
+#         print(f"🎯 Detected Type: {self.document_type}")
+#         print(f"📊 Confidence: {self.document_type_info.get('confidence', 0):.1%}")
+#         print(f"🔍 RFP Score: {self.document_type_info.get('rfp_score', 0)}")
+#         print(f"🔍 RFI Score: {self.document_type_info.get('rfi_score', 0)}")
+#         print(f"💭 Reasoning: {self.document_type_info.get('reasoning', 'No reasoning available')}")
+        
+#         # Print LLM-extracted metadata - WITH APPROPRIATE FIELD COUNT BASED ON DOCUMENT TYPE
+#         print(f"\n{'='*80}")
+#         if self.document_type == "RFI":
+#             print(f"🤖 LLM-EXTRACTED RFI DOCUMENT METADATA (8 FIELDS)")
+#             print(f"{'='*80}")
+#             print(f"🆔 Document ID: {self.document_metadata.get('document_id', 'N/A')}")
+#             print(f"🏢 Client Name: {self.document_metadata.get('client_name', 'N/A')}")
+#             print(f"🏷️ Domain Category: {self.document_metadata.get('domain_category', 'N/A')}")
+#             print(f"⚙️ Service Category: {self.document_metadata.get('service_category', 'N/A')}")
+#             print(f"📝 Project Title: {self.document_metadata.get('project_title', 'N/A')}")
+#             print(f"📄 RFI Description: {len(str(self.document_metadata.get('rfi_description', '')))} characters")
+#             print(f"📅 Submission Date: {self.document_metadata.get('submission_date', 'N/A')}")
+#             print(f"⏱️ Duration: {self.document_metadata.get('duration', 'N/A')}")
+#         else:
+#             print(f"🤖 LLM-EXTRACTED RFP DOCUMENT METADATA (11 FIELDS)")
+#             print(f"{'='*80}")
+#             print(f"📝 Project Title: {self.document_metadata.get('project_title', 'N/A')}")
+#             print(f"🏢 Client Name: {self.document_metadata.get('client_name', 'N/A')}")
+#             print(f"🏭 Vendor Name: {self.document_metadata.get('vendor_name', 'N/A')}")
+#             print(f"📅 Submission Date: {self.document_metadata.get('submission_date', 'N/A')}")
+#             print(f"🏷️ Domain Category: {self.document_metadata.get('domain_category', 'N/A')}")
+#             print(f"⚙️ Service Category: {self.document_metadata.get('service_category', 'N/A')}")
+#             print(f"💰 Revenue Range: {self.document_metadata.get('revenue_range', 'N/A')}")
+#             print(f"🌍 Region: {self.document_metadata.get('region', 'N/A')}")
+#             print(f"💵 Project Value: {self.document_metadata.get('project_value', 'N/A')}")
+#             print(f"📜 Compliance Standard: {self.document_metadata.get('compliance_standard', 'N/A')}")
+#             print(f"🔧 Equipments Used: {self.document_metadata.get('equipments_used', 'N/A')}")
+
+#         print(f"\n{'='*80}")
+#         field_count = 8 if self.document_type == "RFI" else 11
+#         print(f"🎯 ENHANCED SUMMARY WITH LLM INTEGRATION - {field_count} FIELDS ({self.document_type})")
+#         print(f"📄 Document Type: {self.document_type} (Confidence: {self.document_type_info.get('confidence', 0):.1%})")
+#         print(f"📝 Text chunks: {len(text_chunks)} (with LLM metadata)")
+#         print(f"📊 Table chunks: {len(table_chunks)} (with LLM metadata + verbalization)")
+#         print(f"🖼️ Image chunks: {len(image_chunks)} (with LLM metadata + verbalization)")
+#         print(f"🤖 LLM Metadata: ✅ Extracted {field_count} fields from complete document")
+#         print(f"🗂️ Section Mapping: ✅ Using separate SectionMapper for clean architecture")
+        
+#         if self.document_type == "RFI":
+#             print(f"✅ RFI Fields: document_id, client_name, domain_category, service_category, project_title, rfi_description, submission_date, duration")
+#         else:
+#             print(f"✅ RFP Fields: project_title→file_name, vendor_name→author, domain_category→domain")
+#             print(f"✅ Financial Fields: revenue_range→💰, region→🌍, project_value→💵")
+#             print(f"✅ Technical Fields: compliance_standard→📜, equipments_used→🔧")
+            
+#         print(f"✅ FULL CONTENT DISPLAY: No truncation - see complete text, tables, and verbalizations")
+#         print(f"{'='*80}")
+
+#         # Show storage path
+#         if hasattr(self.storage, 'project_id') and hasattr(self.storage, 'document_type'):
+#             print(f"💾 Storage Path: {self.storage.project_id}/{self.storage.document_type}")
+
+
+
+
+import os
+from typing import Dict, List
+from storage.storage_factory import get_storage_instance
+from llm_metadata import RFIExtractor, RFPExtractor
+from llm_metadata.document_type_detector import DocumentTypeDetector
+from .text_extractor import TextExtractor  # Use existing file
+from .table_extractor import TableExtractor  # Use existing file
+from .image_extractor import ImageExtractor  # Use existing file
+from .section_mapper import SectionMapper  # Use existing file
+from .RFI_extractor import SimpleChunkerRFI,TextExtractorRFI
+from data_indexing.data_to_rfp_indexer import AzureSearchRFPResponseUploader
+from data_indexing.data_to_rfi_indexer import AzureSearchRFPRequestUploader
+from config import (AZURE_AI_SEARCH_ENDPOINT, AZURE_AI_SEARCH_KEY, AZURE_AI_SEARCH_RFI_INDEX_NAME,
+    AZURE_AI_SEARCH_RFP_INDEX_NAME, ENABLE_DOCUMENT_TYPE_DETECTION, DEFAULT_DOCUMENT_TYPE)
+
+
+class ContentExtractor:
+    """Extract and process content from Azure Document Intelligence results with verbalization and LLM metadata extraction"""
+    
+    def __init__(self):
+        # self.storage = LocalStorage()
+        self.storage = get_storage_instance()
+        self.text_elements = []  # Store for section association
+        self.text_chunks = []  # Store text chunks for section mapping
+        self.document_metadata = {}  # Store LLM-extracted document metadata
+        self.document_type = "RFP"  # Default document type
+        self.document_type_info = {}  # Store document type detection results
+        
+        # Initialize document type detector
+        self.type_detector = DocumentTypeDetector()
+        self.data_indexing_RFP_request= AzureSearchRFPRequestUploader()
+        self.data_indexing_RFP_response = AzureSearchRFPResponseUploader()
+        # Initialize modular extractors (using existing files)
+        self.text_extractor_RFI =TextExtractorRFI()
+        self.text_extractor = TextExtractor()
+        self.table_extractor = TableExtractor()
+        self.image_extractor = ImageExtractor()
+        self.section_mapper = SectionMapper()  # ✅ Keep section mapping separate
+
+    # NEW METHOD: Extract project ID from filename
+    def _extract_project_id_from_filename(self, filename: str) -> str:
+        """Extract project ID (first 15 characters) from filename"""
+        if not filename:
+            return "unknown_project"
+        
+        # Remove file extension and get first 15 characters
+        base_name = os.path.splitext(filename)[0]
+        project_id = base_name[:15] if len(base_name) >= 15 else base_name
+        print(f"🔑 Extracted Project ID: {project_id}")
+        return project_id
+    
+    async def extract_all_content(self, result, filename: str, client=None, operation_id=None) -> Dict:
+        """Extract text, tables, and images from Azure Document Intelligence result with verbalization and LLM metadata extraction"""
+        base_filename = os.path.splitext(filename)[0]
+        
+        print(f"🔍 Extracting content from {filename}...")
+        print(f"📋 Debug: client={client is not None}, operation_id={operation_id}")
+        
+        # Extract content using Azure DI
+        print(f"📋 Step 1: Extracting text elements...")
+        self.text_elements = self.text_extractor.extract_text(result)
+        print(f"📋 Text elements extracted: {len(self.text_elements)}")
+
+        all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
+        rfp_id = self.text_extractor.extract_rfp_id_from_text(all_text)
+        print(f"🔑 Extracted RFP ID for all chunks: {rfp_id}")
+        
+        # NEW: Extract project ID from filename
+        project_id = self._extract_project_id_from_filename(filename)
+        
+        # Step 1.2 - Document type selection (Auto-detect or Hardcoded)
+        if ENABLE_DOCUMENT_TYPE_DETECTION:
+            print(f"📄 Step 1.2: Auto-detecting document type (RFI vs RFP)...")
+            self.document_type_info = self.type_detector.detect_document_type(self.text_elements)
+            # self.document_type = self.document_type_info.get('document_type', 'RFP')
+            document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+            self.storage.set_project_context(filename, document_type_folder)
+            self.type_detector.print_detection_summary(self.document_type_info)
+        else:
+            self.document_type = DEFAULT_DOCUMENT_TYPE
+            print(f"🔒 HARDCODED: Using {self.document_type} extractor (detection disabled)")
+            self.document_type_info = {
+                'document_type': self.document_type,
+                'confidence': 1.0,
+                'reasoning': 'Hardcoded configuration setting'
+            }
+            
+        document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
+        self.storage.set_project_context(filename, document_type_folder)    
+
+        # Step 1.5 - Extract document metadata using selected extractor
+        if self.document_type == "RFI":
+            print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
+            rfi_extractor = RFIExtractor()
+            self.document_metadata = await rfi_extractor.extract_metadata_only(self.text_elements)
+            print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
+        else:
+            print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
+            rfp_extractor = RFPExtractor()
+            self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
+            print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+                
+        print(f"📋 Step 2: Creating text chunks with LLM metadata using SimpleChunker...")
+        # OLD CODE:
+        # self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
+        
+        # # NEW CODE: Pass project_id to text chunker
+        # self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(
+        #     self.text_elements, 
+        #     self.document_metadata, 
+        #     project_id
+        # )
+        # print(f"📋 Text chunks created: {len(self.text_chunks)}")
+        # NEW CODE: Pass project_id to text chunker
+        if self.document_type == "RFI":
+            self.text_chunks = self.text_extractor_RFI.create_text_chunks_with_simple_chunker_for_RFI(
+                self.text_elements, 
+                self.document_metadata, 
+                project_id
+            )
+
+            print(f"📋 Text chunks created: {len(self.text_chunks)}")
+        else:
+            self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker_for_RFP(
+                self.text_elements, 
+                self.document_metadata, 
+                project_id
+        )
+        print(f"📋 Text chunks created: {len(self.text_chunks)}")
+        
+        print(f"📋 Step 3: Extracting tables with section association...")
+        tables = self.table_extractor.extract_tables(result, base_filename, self.section_mapper, self.storage)
+
+        print(f"📋 Step 4: Extracting figures with section association...")
+        figures = self.image_extractor.extract_figures(result, base_filename, client, operation_id, self.section_mapper, self.text_elements, self.storage)
+        
+        # Create table chunks with verbalization, section mapping, and LLM metadata
+        print(f"🤖 Creating table chunks with verbalization, section mapping, and LLM metadata...")
+        # OLD CODE:
+        # table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+        
+        # NEW CODE: Pass project_id to table chunker
+        if self.document_type == "RFP":
+            table_chunks = await self.table_extractor.create_table_chunks(
+                tables, 
+                base_filename, 
+                self.document_metadata, 
+                self.section_mapper, 
+                self.text_elements, 
+                rfp_id=rfp_id, 
+                project_id=project_id
+            )
+
+        # Create image chunks with verbalization, section mapping, and LLM metadata
+        print(f"🤖 Creating image chunks with verbalization, section mapping, and LLM metadata...")
+        # OLD CODE:
+        # image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
+        
+        # NEW CODE: Pass project_id to image chunker
+        if self.document_type == "RFP":
+            image_chunks = await self.image_extractor.create_image_chunks(
+                figures, 
+                base_filename, 
+                self.document_metadata, 
+                self.section_mapper, 
+                self.text_elements, 
+                rfp_id=rfp_id, 
+                project_id=project_id
+            )
+
+        # Combine all chunks
+        if self.document_type=="RFI":
+            all_chunks = self.text_chunks
+        else:
+            all_chunks = self.text_chunks + table_chunks + image_chunks
+        
+        # Create all text content for raw text storage
+        all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
+        
+        if all_chunks and self.document_type=="RFI":
+                print(f"📋 Saving enhanced text chunks to local storage...")
+                # chunk_data,json_path=self.storage.save_text_chunks(all_chunks, base_filename)
+                chunk_data,json_path=self.storage.save_text_chunks_RFI(all_chunks, base_filename)
+                if chunk_data and self.document_type=="RFI":
+                    print("chunk data is present and is as follows")
+                    print(chunk_data)
+                    self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
+                    print(f"Data Uploaded to the Azure AI Search")
+        else:
+                chunk_data,json_path=self.storage.save_text_chunks(all_chunks, base_filename)
+                if chunk_data and self.document_type=="RFP":
+                    print("chunk data is present and is as follows")
+                    print(chunk_data)
+                    self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
+                    print(f"Data Uploaded to the Azure AI Search")
+                
+        print(f"✅ Content extraction complete!")
+
+        # Save text content to local storage
+        if all_text.strip():
+            self.storage.save_raw_text(all_text, base_filename)
+        
+        # Save enhanced text chunks to local storage (now includes LLM metadata)
+        if all_chunks and self.document_type=="RFI":
+            self.storage.save_text_chunks_RFI(all_chunks, base_filename)
+        else:
+            self.storage.save_text_chunks(all_chunks, base_filename)
+        
+        print(f"✅ Content extraction complete!")
+        
+        # Print debug information
+        # self._print_extraction_debug(all_text, self.text_chunks, tables, figures, table_chunks, image_chunks)
+        self._print_extraction_debug(all_text, self.text_chunks, tables, figures)
+
+        # return {
+        #     "text": all_text,
+        #     "text_chunks": all_chunks,
+        #     "tables": tables,
+        #     "images": figures,
+        #     "raw_text": all_text,
+        #     "document_metadata": self.document_metadata,  # Include LLM-extracted metadata in response
+        #     "document_type": self.document_type,  # Include detected document type
+        #     "document_type_info": self.document_type_info,  # Include detection details
+        #     "project_id": project_id,  # NEW: Include project_id in response
+        #     "stats": {
+        #         "text_count": len(self.text_chunks),
+        #         "table_count": len(table_chunks),
+        #         "image_count": len(image_chunks),
+        #         "total_chunks": len(all_chunks)
+        #     }
+        # }
+        return {
+            "text": all_text,
+            "text_chunks": all_chunks,
+            "tables": tables,
+            "images": figures,
+            "raw_text": all_text,
+            "document_metadata": self.document_metadata,  # Include LLM-extracted metadata in response
+            "document_type": self.document_type,  # Include detected document type
+            "document_type_info": self.document_type_info,  # Include detection details
+            "project_id": project_id,  # NEW: Include project_id in response
+            "stats": {
+                "text_count": len(self.text_chunks),
+                "total_chunks": len(all_chunks)
+            }
+        }
+    
+    def _print_extraction_debug(self, all_text, text_chunks, tables, figures, table_chunks, image_chunks):
+        """Print comprehensive debug information with LLM metadata - FULL CONTENT DISPLAY INCLUDING RFI/RFP DETECTION"""
+        
+        # Print Document Type Detection Results FIRST
+        print(f"\n{'='*80}")
+        print(f"📄 DOCUMENT TYPE DETECTION RESULTS")
+        print(f"{'='*80}")
+        print(f"🎯 Detected Type: {self.document_type}")
+        print(f"📊 Confidence: {self.document_type_info.get('confidence', 0):.1%}")
+        print(f"🔍 RFP Score: {self.document_type_info.get('rfp_score', 0)}")
+        print(f"🔍 RFI Score: {self.document_type_info.get('rfi_score', 0)}")
+        print(f"💭 Reasoning: {self.document_type_info.get('reasoning', 'No reasoning available')}")
+        
+        # Print LLM-extracted metadata - WITH APPROPRIATE FIELD COUNT BASED ON DOCUMENT TYPE
+        print(f"\n{'='*80}")
+        if self.document_type == "RFI":
+            print(f"🤖 LLM-EXTRACTED RFI DOCUMENT METADATA (8 FIELDS)")
+            print(f"{'='*80}")
+            print(f"🆔 Document ID: {self.document_metadata.get('document_id', 'N/A')}")
+            print(f"🏢 Client Name: {self.document_metadata.get('client_name', 'N/A')}")
+            print(f"🏷️ Domain Category: {self.document_metadata.get('domain_category', 'N/A')}")
+            print(f"⚙️ Service Category: {self.document_metadata.get('service_category', 'N/A')}")
+            print(f"📝 Project Title: {self.document_metadata.get('project_title', 'N/A')}")
+            print(f"📄 RFI Description: {len(str(self.document_metadata.get('rfi_description', '')))} characters")
+            print(f"📅 Submission Date: {self.document_metadata.get('submission_date', 'N/A')}")
+            print(f"⏱️ Duration: {self.document_metadata.get('duration', 'N/A')}")
+        else:
+            print(f"🤖 LLM-EXTRACTED RFP DOCUMENT METADATA (11 FIELDS)")
+            print(f"{'='*80}")
+            print(f"📝 Project Title: {self.document_metadata.get('project_title', 'N/A')}")
+            print(f"🏢 Client Name: {self.document_metadata.get('client_name', 'N/A')}")
+            print(f"🏭 Vendor Name: {self.document_metadata.get('vendor_name', 'N/A')}")
+            print(f"📅 Submission Date: {self.document_metadata.get('submission_date', 'N/A')}")
+            print(f"🏷️ Domain Category: {self.document_metadata.get('domain_category', 'N/A')}")
+            print(f"⚙️ Service Category: {self.document_metadata.get('service_category', 'N/A')}")
+            print(f"💰 Revenue Range: {self.document_metadata.get('revenue_range', 'N/A')}")
+            print(f"🌍 Region: {self.document_metadata.get('region', 'N/A')}")
+            print(f"💵 Project Value: {self.document_metadata.get('project_value', 'N/A')}")
+            print(f"📜 Compliance Standard: {self.document_metadata.get('compliance_standard', 'N/A')}")
+            print(f"🔧 Equipments Used: {self.document_metadata.get('equipments_used', 'N/A')}")
+
+        print(f"\n{'='*80}")
+        field_count = 8 if self.document_type == "RFI" else 11
+        print(f"🎯 ENHANCED SUMMARY WITH LLM INTEGRATION - {field_count} FIELDS ({self.document_type})")
+        print(f"📄 Document Type: {self.document_type} (Confidence: {self.document_type_info.get('confidence', 0):.1%})")
+        print(f"📝 Text chunks: {len(text_chunks)} (with LLM metadata)")
+        print(f"📊 Table chunks: {len(table_chunks)} (with LLM metadata + verbalization)")
+        print(f"🖼️ Image chunks: {len(image_chunks)} (with LLM metadata + verbalization)")
+        print(f"🤖 LLM Metadata: ✅ Extracted {field_count} fields from complete document")
+        print(f"🗂️ Section Mapping: ✅ Using separate SectionMapper for clean architecture")
+        
+        if self.document_type == "RFI":
+            print(f"✅ RFI Fields: document_id, client_name, domain_category, service_category, project_title, rfi_description, submission_date, duration")
+        else:
+            print(f"✅ RFP Fields: project_title→file_name, vendor_name→author, domain_category→domain")
+            print(f"✅ Financial Fields: revenue_range→💰, region→🌍, project_value→💵")
+            print(f"✅ Technical Fields: compliance_standard→📜, equipments_used→🔧")
+            
+        print(f"✅ FULL CONTENT DISPLAY: No truncation - see complete text, tables, and verbalizations")
+        print(f"{'='*80}")
+
+        # Show storage path
+        if hasattr(self.storage, 'project_id') and hasattr(self.storage, 'document_type'):
+            print(f"💾 Storage Path: {self.storage.project_id}/{self.storage.document_type}")
