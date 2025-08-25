@@ -247,17 +247,14 @@
 
 import os
 from typing import Dict, List
-# from storage.local_storage import LocalStorage
 from storage.storage_factory import get_storage_instance
-
-# from llm_metadata.power_extractor import PowerMetadataExtractor
-# from llm_metadata.rfi_extractor import RFIMetadataExtractor
 from llm_metadata import RFIExtractor, RFPExtractor
 from llm_metadata.document_type_detector import DocumentTypeDetector
 from .text_extractor import TextExtractor  # Use existing file
 from .table_extractor import TableExtractor  # Use existing file
 from .image_extractor import ImageExtractor  # Use existing file
 from .section_mapper import SectionMapper  # Use existing file
+from .RFI_extractor import SimpleChunkerRFI,TextExtractorRFI
 from data_indexing.data_to_rfp_indexer import AzureSearchRFPResponseUploader
 from data_indexing.data_to_rfi_indexer import AzureSearchRFPRequestUploader
 from config import (AZURE_AI_SEARCH_ENDPOINT, AZURE_AI_SEARCH_KEY, AZURE_AI_SEARCH_RFI_INDEX_NAME,
@@ -281,6 +278,7 @@ class ContentExtractor:
         self.data_indexing_RFP_request= AzureSearchRFPRequestUploader()
         self.data_indexing_RFP_response = AzureSearchRFPResponseUploader()
         # Initialize modular extractors (using existing files)
+        self.text_extractor_RFI =TextExtractorRFI()
         self.text_extractor = TextExtractor()
         self.table_extractor = TableExtractor()
         self.image_extractor = ImageExtractor()
@@ -333,6 +331,7 @@ class ContentExtractor:
                 'confidence': 1.0,
                 'reasoning': 'Hardcoded configuration setting'
             }
+            
         document_type_folder = "rfp_request" if self.document_type == "RFI" else "rfp_response"
         self.storage.set_project_context(filename, document_type_folder)    
 
@@ -340,7 +339,7 @@ class ContentExtractor:
         if self.document_type == "RFI":
             print(f"🤖 Step 1.5: Extracting RFI metadata using LLM from complete document...")
             rfi_extractor = RFIExtractor()
-            self.document_metadata = await rfi_extractor.extract_metadata(self.text_elements)
+            self.document_metadata = await rfi_extractor.extract_metadata_only(self.text_elements)
             print(f"📋 RFI metadata extracted: {len(self.document_metadata)} fields")
         else:
             print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
@@ -352,11 +351,27 @@ class ContentExtractor:
         # OLD CODE:
         # self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(self.text_elements, self.document_metadata)
         
+        # # NEW CODE: Pass project_id to text chunker
+        # self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(
+        #     self.text_elements, 
+        #     self.document_metadata, 
+        #     project_id
+        # )
+        # print(f"📋 Text chunks created: {len(self.text_chunks)}")
         # NEW CODE: Pass project_id to text chunker
-        self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker(
-            self.text_elements, 
-            self.document_metadata, 
-            project_id
+        if self.document_type == "RFI":
+            self.text_chunks = self.text_extractor_RFI.create_text_chunks_with_simple_chunker_for_RFI(
+                self.text_elements, 
+                self.document_metadata, 
+                project_id
+            )
+
+            print(f"📋 Text chunks created: {len(self.text_chunks)}")
+        else:
+            self.text_chunks = self.text_extractor.create_text_chunks_with_simple_chunker_for_RFP(
+                self.text_elements, 
+                self.document_metadata, 
+                project_id
         )
         print(f"📋 Text chunks created: {len(self.text_chunks)}")
         
@@ -372,15 +387,16 @@ class ContentExtractor:
         # table_chunks = await self.table_extractor.create_table_chunks(tables, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
         
         # NEW CODE: Pass project_id to table chunker
-        table_chunks = await self.table_extractor.create_table_chunks(
-            tables, 
-            base_filename, 
-            self.document_metadata, 
-            self.section_mapper, 
-            self.text_elements, 
-            rfp_id=rfp_id, 
-            project_id=project_id
-        )
+        if self.document_type == "RFP":
+            table_chunks = await self.table_extractor.create_table_chunks(
+                tables, 
+                base_filename, 
+                self.document_metadata, 
+                self.section_mapper, 
+                self.text_elements, 
+                rfp_id=rfp_id, 
+                project_id=project_id
+            )
 
         # Create image chunks with verbalization, section mapping, and LLM metadata
         print(f"🤖 Creating image chunks with verbalization, section mapping, and LLM metadata...")
@@ -388,32 +404,43 @@ class ContentExtractor:
         # image_chunks = await self.image_extractor.create_image_chunks(figures, base_filename, self.document_metadata, self.section_mapper, self.text_elements, rfp_id=rfp_id)
         
         # NEW CODE: Pass project_id to image chunker
-        image_chunks = await self.image_extractor.create_image_chunks(
-            figures, 
-            base_filename, 
-            self.document_metadata, 
-            self.section_mapper, 
-            self.text_elements, 
-            rfp_id=rfp_id, 
-            project_id=project_id
-        )
+        if self.document_type == "RFP":
+            image_chunks = await self.image_extractor.create_image_chunks(
+                figures, 
+                base_filename, 
+                self.document_metadata, 
+                self.section_mapper, 
+                self.text_elements, 
+                rfp_id=rfp_id, 
+                project_id=project_id
+            )
 
         # Combine all chunks
-        all_chunks = self.text_chunks + table_chunks + image_chunks
+        if self.document_type=="RFI":
+            all_chunks = self.text_chunks
+        else:
+            all_chunks = self.text_chunks + table_chunks + image_chunks
         
         # Create all text content for raw text storage
         all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
         
-        if all_chunks:
+        if all_chunks and self.document_type=="RFI":
                 print(f"📋 Saving enhanced text chunks to local storage...")
-                chunk_data,json_path=self.storage.save_text_chunks(all_chunks, base_filename)
-                # print(chunk_data)
-                if chunk_data and self.document_type == "RFI":
+                # chunk_data,json_path=self.storage.save_text_chunks(all_chunks, base_filename)
+                chunk_data,json_path=self.storage.save_text_chunks_RFI(all_chunks, base_filename)
+                if chunk_data and self.document_type=="RFI":
+                    print("chunk data is present and is as follows")
+                    print(chunk_data)
                     self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
                     print(f"Data Uploaded to the Azure AI Search")
-                else:
+        else:
+                chunk_data,json_path=self.storage.save_text_chunks(all_chunks, base_filename)
+                if chunk_data and self.document_type=="RFP":
+                    print("chunk data is present and is as follows")
+                    print(chunk_data)
                     self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
                     print(f"Data Uploaded to the Azure AI Search")
+                
         print(f"✅ Content extraction complete!")
 
         # Save text content to local storage
@@ -421,14 +448,34 @@ class ContentExtractor:
             self.storage.save_raw_text(all_text, base_filename)
         
         # Save enhanced text chunks to local storage (now includes LLM metadata)
-        if all_chunks:
+        if all_chunks and self.document_type=="RFI":
+            self.storage.save_text_chunks_RFI(all_chunks, base_filename)
+        else:
             self.storage.save_text_chunks(all_chunks, base_filename)
         
         print(f"✅ Content extraction complete!")
         
         # Print debug information
-        self._print_extraction_debug(all_text, self.text_chunks, tables, figures, table_chunks, image_chunks)
-        
+        # self._print_extraction_debug(all_text, self.text_chunks, tables, figures, table_chunks, image_chunks)
+        self._print_extraction_debug(all_text, self.text_chunks, tables, figures)
+
+        # return {
+        #     "text": all_text,
+        #     "text_chunks": all_chunks,
+        #     "tables": tables,
+        #     "images": figures,
+        #     "raw_text": all_text,
+        #     "document_metadata": self.document_metadata,  # Include LLM-extracted metadata in response
+        #     "document_type": self.document_type,  # Include detected document type
+        #     "document_type_info": self.document_type_info,  # Include detection details
+        #     "project_id": project_id,  # NEW: Include project_id in response
+        #     "stats": {
+        #         "text_count": len(self.text_chunks),
+        #         "table_count": len(table_chunks),
+        #         "image_count": len(image_chunks),
+        #         "total_chunks": len(all_chunks)
+        #     }
+        # }
         return {
             "text": all_text,
             "text_chunks": all_chunks,
@@ -441,8 +488,6 @@ class ContentExtractor:
             "project_id": project_id,  # NEW: Include project_id in response
             "stats": {
                 "text_count": len(self.text_chunks),
-                "table_count": len(table_chunks),
-                "image_count": len(image_chunks),
                 "total_chunks": len(all_chunks)
             }
         }

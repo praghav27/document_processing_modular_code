@@ -180,7 +180,7 @@ class SimpleChunker:
             }
         }
         return chunk
-    
+
     def print_chunks(self, chunks: List[Dict]):
         """Print chunks with detailed formatting including LLM-extracted metadata - FULL CONTENT"""
         print(f"\n{'='*80}")
@@ -298,7 +298,7 @@ class TextExtractor:
         return 'unknown_rfp'
 
     # def create_text_chunks_with_simple_chunker(self, text_elements: List[Dict], document_metadata: Dict) -> List[Dict]:
-    def create_text_chunks_with_simple_chunker(self, text_elements: List[Dict], document_metadata: Dict, project_id: str = None) -> List[Dict]:
+    def create_text_chunks_with_simple_chunker_for_RFP(self, text_elements: List[Dict], document_metadata: Dict, project_id: str = None) -> List[Dict]:
         """Create text chunks using the sophisticated SimpleChunker with LLM metadata"""
         # Create all text content with role tags (like previous code)
         all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in text_elements])
@@ -329,8 +329,6 @@ class TextExtractor:
         chunker.print_chunks(chunks)
         return chunks
         
-        return chunks
-    
     def _get_position_info(self, paragraph):
         """Extract position information from bounding regions"""
         if hasattr(paragraph, 'bounding_regions') and paragraph.bounding_regions:
