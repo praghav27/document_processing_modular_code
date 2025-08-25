@@ -198,7 +198,7 @@ TEXT_DIR = "extracted_content/text"
 
 # Document type detection and processing configuration
 ENABLE_DOCUMENT_TYPE_DETECTION = os.getenv("ENABLE_DOCUMENT_TYPE_DETECTION", "True").lower() == "true"
-DEFAULT_DOCUMENT_TYPE = os.getenv("DEFAULT_DOCUMENT_TYPE", "RFP")  # RFP or RFI
+DEFAULT_DOCUMENT_TYPE = os.getenv("DEFAULT_DOCUMENT_TYPE", "RFI")  # RFP or RFI
 
 # RFI Processing Configuration - UPDATED
 RFI_CHUNKING_ENABLED = False  # HARDCODED: RFI never uses chunking
