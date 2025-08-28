@@ -15,7 +15,8 @@ class SimpleChunker:
             'page_footer': r'\[ParagraphRole\.PAGE_FOOTER\]\s*([^\[]+)'
         }
     
-    def chunk_text(self, text: str, document_metadata: Dict = None, rfp_id: str = None) -> List[Dict]:
+    # def chunk_text(self, text: str, document_metadata: Dict = None, rfp_id: str = None) -> List[Dict]:
+    def chunk_text(self, text: str, document_metadata: Dict = None, rfp_id: str = None, project_id: str = None) -> List[Dict]:
         """Create chunks from text with enhanced section detection and document metadata integration"""
         print(f"DEBUG: Input text length: {len(text)}")
         print(f"DEBUG: First 200 chars: {repr(text[:200])}")
@@ -38,7 +39,8 @@ class SimpleChunker:
                 # Clean the section after splitting
                 cleaned_section = self._clean_text(section)
                 if cleaned_section.strip():  # Check again after cleaning
-                    chunk = self._create_chunk(cleaned_section, idx, document_metadata,rfp_id)
+                    # chunk = self._create_chunk(cleaned_section, idx, document_metadata,rfp_id)
+                    chunk = self._create_chunk(cleaned_section, idx, document_metadata, rfp_id, project_id)
                     chunks.append(chunk)
                     print(f"DEBUG: Created chunk {idx + 1} with {len(cleaned_section)} chars")
                 else:
@@ -130,7 +132,8 @@ class SimpleChunker:
             'section_name': first_meaningful_line[:50] if first_meaningful_line else 'UNKNOWN_SECTION'
         }
     
-    def _create_chunk(self, content: str, idx: int, document_metadata: Dict = None,rfp_id:str=None) -> Dict:
+    # def _create_chunk(self, content: str, idx: int, document_metadata: Dict = None,rfp_id:str=None) -> Dict:
+    def _create_chunk(self, content: str, idx: int, document_metadata: Dict = None, rfp_id: str = None, project_id: str = None) -> Dict:
         """Create chunk with comprehensive metadata including LLM-extracted document metadata"""
         section_info = self._extract_section_info(content)
         
@@ -158,6 +161,7 @@ class SimpleChunker:
         chunk = {
             'chunk_id': str(uuid.uuid4())[:8],
             'file_name': file_name,
+            'project_id': project_id,
             'section_name': section_info['section_name'],
             'section_no': section_info['section_no'],
             'domain': domain,
@@ -176,7 +180,7 @@ class SimpleChunker:
             }
         }
         return chunk
-    
+
     def print_chunks(self, chunks: List[Dict]):
         """Print chunks with detailed formatting including LLM-extracted metadata - FULL CONTENT"""
         print(f"\n{'='*80}")
@@ -293,7 +297,8 @@ class TextExtractor:
         print(f"⚠️ No RFP ID found in footer using regex - using default RFP ID")
         return 'unknown_rfp'
 
-    def create_text_chunks_with_simple_chunker(self, text_elements: List[Dict], document_metadata: Dict) -> List[Dict]:
+    # def create_text_chunks_with_simple_chunker(self, text_elements: List[Dict], document_metadata: Dict) -> List[Dict]:
+    def create_text_chunks_with_simple_chunker_for_RFP(self, text_elements: List[Dict], document_metadata: Dict, project_id: str = None) -> List[Dict]:
         """Create text chunks using the sophisticated SimpleChunker with LLM metadata"""
         # Create all text content with role tags (like previous code)
         all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in text_elements])
@@ -318,13 +323,12 @@ class TextExtractor:
         # Advanced chunking with debugging and LLM metadata
         rfp_id = self.extract_rfp_id_from_text(all_text)
         chunker = SimpleChunker()
-        chunks = chunker.chunk_text(all_text, document_metadata, rfp_id=rfp_id)
+        # chunks = chunker.chunk_text(all_text, document_metadata, rfp_id=rfp_id)
+        chunks = chunker.chunk_text(all_text, document_metadata, rfp_id=rfp_id, project_id=project_id)
         chunker.debug_text_analysis(all_text)
         chunker.print_chunks(chunks)
         return chunks
         
-        return chunks
-    
     def _get_position_info(self, paragraph):
         """Extract position information from bounding regions"""
         if hasattr(paragraph, 'bounding_regions') and paragraph.bounding_regions:

@@ -250,7 +250,7 @@ class RFPResponseIndexManager:
         ]
 
         openai_params = AzureOpenAIVectorizerParameters(
-            resource_url="https://tetratech.openai.azure.com",
+            resource_url="https://ttdevopscaedevaif-rfprfi.openai.azure.com/",
             deployment_name=AZURE_EMBEDDING_MODEL,
             model_name=AZURE_EMBEDDING_MODEL_NAME,
             api_key=AZURE_EMBEDDING_API_KEY
