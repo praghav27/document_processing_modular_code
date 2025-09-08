@@ -583,3 +583,5 @@ Extract the metadata now:
             "reuses_existing_client": True,
             "enhancement": "DI_text + first_10_pages_comprehensive_content + component_format"
         }
+    
+    ####Metadata##
