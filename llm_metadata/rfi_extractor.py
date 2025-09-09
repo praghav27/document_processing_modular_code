@@ -1,3 +1,5 @@
+
+
 import json
 import re
 from typing import Dict, List
@@ -5,7 +7,7 @@ from .prompts import DocumentMetadataPrompts
 from processors.content_verbalizer import ContentVerbalizer
 
 class RFIExtractor:
-    """Extract RFI metadata (new component-based format) from documents using Azure OpenAI - Enhanced with first 10 pages content"""
+    """Extract RFI metadata (enhanced component-based format with component-specific fields) from documents using Azure OpenAI"""
    
     def __init__(self):
         """Initialize RFI extractor with existing Azure OpenAI client"""
@@ -14,33 +16,67 @@ class RFIExtractor:
             'project_name', 'client', 'industry', 'region', 'prepared_date', 'components'
         ]
         
-        # Component mapping
+        # Component mapping with specific fields
         self.valid_components = {
-            'ELE': 'Electrical',
-            'FND': 'Foundations', 
-            'AUX': 'Auxiliary',
-            'CNT': 'Control',
-            'EQP': 'Equipment',
-            'TEL': 'Telecom',
-            'PRT': 'Protection',
-            'STE': 'Site Preparation',
-            'STR': 'Structures',
-            'MET': 'Metering',
-            'LN': 'Lines (Transmission Lines)'
+            'ELE': {
+                'name': 'Electrical',
+                'specific_fields': ['voltage_class', 'transformer']
+            },
+            'FND': {
+                'name': 'Foundations', 
+                'specific_fields': ['transformer_foundations', 'equipment_support_foundations']
+            },
+            'AUX': {
+                'name': 'Auxiliary',
+                'specific_fields': ['HVAC_and_FAS', 'HADs_arrangements']
+            },
+            'CNT': {
+                'name': 'Control',
+                'specific_fields': ['control_design_packages', 'SCADA_infrastructure']
+            },
+            'EQP': {
+                'name': 'Equipment',
+                'specific_fields': ['bus_systems', 'circuit_breakers_and_disconnects']
+            },
+            'TEL': {
+                'name': 'Telecom',
+                'specific_fields': ['station_lan_networks', 'scada_and_transport_infrastructure']
+            },
+            'PRT': {
+                'name': 'Protection',
+                'specific_fields': ['transformer_protection', 'breaker_protection']
+            },
+            'STE': {
+                'name': 'Site Preparation',
+                'specific_fields': ['grading_and_roads', 'drainage_and_water_management']
+            },
+            'STR': {
+                'name': 'Structures',
+                'specific_fields': ['steel_and_station_structures', 'transformer_and_equipment_structures']
+            },
+            'MET': {
+                'name': 'Metering',
+                'specific_fields': ['new_metering_installations', 'existing_metering_retain_or_update']
+            },
+            'LN': {
+                'name': 'Lines (Transmission Lines)',
+                'specific_fields': ['line_relocations_and_bypasses', 'line_rerouting_and_extensions']
+            }
         }
       
-        print("✅ Enhanced RFI Extractor initialized - NEW COMPONENT FORMAT")
+        print("✅ Enhanced RFI Extractor initialized - ENHANCED COMPONENT FORMAT WITH SPECIFIC FIELDS")
         print(f"   📊 Components: {len(self.valid_components)} component types")
         print(f"   🚫 Chunking: DISABLED for RFI documents")
         print(f"   📄 First 10 Pages: ENABLED - extracts all content from pages 1-10")
+        print(f"   ⚡ Component Fields: Each component has 2 specific fields + scope_of_work + required_activities")
    
     async def extract_metadata_only(self, text_elements: List[Dict], azure_di_result=None) -> Dict:
         """
-        Extract ONLY RFI metadata (new component format) from complete document text elements + first 10 pages content
+        Extract ONLY RFI metadata (enhanced component format with specific fields) from complete document text elements + first 10 pages content
         NO CHUNKING - Only metadata extraction for indexing
         """
         try:
-            print("🔍 Enhanced RFI metadata extraction (DI text + First 10 pages content) - NEW FORMAT")
+            print("🔍 Enhanced RFI metadata extraction (DI text + First 10 pages content) - ENHANCED COMPONENT FORMAT")
            
             # Step 1: Convert text elements to complete document text (existing)
             complete_document_text = self._prepare_complete_document_text(text_elements)
@@ -73,7 +109,7 @@ class RFIExtractor:
             print(f"📊 Content prepared for LLM analysis:")
             print(f"   📄 Pages processed: {self._count_pages(text_elements)}")
             print(f"   📝 Total content length: {len(combined_content)} characters")
-            print(f"   🎯 Ready for enhanced metadata extraction")
+            print(f"   🎯 Ready for enhanced metadata extraction with specific component fields")
            
             # Step 4: Generate metadata using Azure OpenAI with combined content
             if self.verbalizer.client:
@@ -82,10 +118,10 @@ class RFIExtractor:
                 print("❌ Azure OpenAI client not available")
                 return self._get_rfi_default_metadata()
            
-            # Step 5: Validate and clean metadata for RFI (new format)
+            # Step 5: Validate and clean metadata for RFI (enhanced format)
             validated_metadata = self._validate_rfi_metadata(metadata)
            
-            print("✅ Enhanced RFI metadata extraction completed (DI + First 10 Pages) - NEW FORMAT")
+            print("✅ Enhanced RFI metadata extraction completed (DI + First 10 Pages) - ENHANCED COMPONENT FORMAT")
             return validated_metadata
            
         except Exception as e:
@@ -286,7 +322,7 @@ class RFIExtractor:
             if content:
                 complete_text += f"[{role}] {content}\n\n"
       
-        print(f"🔍 Processing {len(text_elements)} text elements from complete document...")
+        print(f"📝 Processing {len(text_elements)} text elements from complete document...")
         return complete_text
   
     def _count_pages(self, text_elements: List[Dict]) -> str:
@@ -303,18 +339,18 @@ class RFIExtractor:
         """Extract RFI metadata using Azure OpenAI API with combined content"""
         try:
             print(f"📄 Sending {len(combined_content)} characters to LLM for enhanced RFI analysis")
-            print("🤖 Calling LLM for metadata extraction (DI + First 10 Pages) - NEW FORMAT...")
+            print("🤖 Calling LLM for metadata extraction (DI + First 10 Pages) - ENHANCED COMPONENT FORMAT...")
           
-            # Get the RFI-specific prompt with new format
+            # Get the RFI-specific prompt with enhanced format
             prompt = self._get_enhanced_rfi_extraction_prompt(combined_content)
           
             response = await self.verbalizer.client.chat.completions.create(
                 model="gpt-4o",  # Use same model as ContentVerbalizer
                 messages=[
-                    {"role": "system", "content": "You are an expert RFI analyst. Extract the metadata fields for RFI documents from the comprehensive content provided. Return only valid JSON in the new component-based format."},
+                    {"role": "system", "content": "You are an expert RFI analyst. Extract the metadata fields for RFI documents from the comprehensive content provided. Return only valid JSON in the enhanced component-based format with component-specific fields."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=2000,  # Increased for component structure
+                max_tokens=3000,  # Increased for enhanced component structure
                 temperature=0.1  # Low temperature for consistent extraction
             )
           
@@ -324,7 +360,7 @@ class RFIExtractor:
             # Clean and parse JSON response
             metadata = self._parse_json_response(response_text)
           
-            print("✅ Successfully parsed enhanced metadata from LLM - NEW FORMAT")
+            print("✅ Successfully parsed enhanced metadata from LLM - ENHANCED COMPONENT FORMAT")
             return metadata
               
         except Exception as e:
@@ -332,9 +368,9 @@ class RFIExtractor:
             return self._get_rfi_default_metadata()
 
     def _get_enhanced_rfi_extraction_prompt(self, combined_content: str) -> str:
-        """Get the enhanced RFI metadata extraction prompt for new component format"""
+        """Get the enhanced RFI metadata extraction prompt for enhanced component format with specific fields"""
         return f"""
-You are an expert RFI (Request for Information) analyzer. Extract metadata fields from the comprehensive document content provided below. Return ONLY a valid JSON object in the NEW COMPONENT-BASED FORMAT.
+You are an expert RFI (Request for Information) analyzer. Extract metadata fields from the comprehensive document content provided below. Return ONLY a valid JSON object in the ENHANCED COMPONENT-BASED FORMAT with component-specific fields.
 
 **IMPORTANT**: The content below includes:
 1. Document Intelligence extracted text (structured text elements)
@@ -397,29 +433,29 @@ DATE FORMAT RULES:
 
 6. **components**: You are an expert document analyzer specializing in Technical Information Packages (TIP) and engineering documents.
 
-Your task is to identify the engineering components and map scope of work and required activities to each component.
+Your task is to identify the engineering components and extract ALL required fields for each component found.
 
 VALID COMPONENTS (use ONLY these codes):
-- "ELE" → Electrical
-- "FND" → Foundations
-- "AUX" → Auxiliary
-- "CNT" → Control
-- "EQP" → Equipment
-- "TEL" → Telecom
-- "PRT" → Protection
-- "STE" → Site Preparation
-- "STR" → Structures
-- "MET" → Metering
-- "LN" → Lines (Transmission Lines)
+- "ELE" → Electrical (fields: voltage_class, transformer)
+- "FND" → Foundations (fields: transformer_foundations, equipment_support_foundations)
+- "AUX" → Auxiliary (fields: HVAC_and_FAS, HADs_arrangements)
+- "CNT" → Control (fields: control_design_packages, SCADA_infrastructure)
+- "EQP" → Equipment (fields: bus_systems, circuit_breakers_and_disconnects)
+- "TEL" → Telecom (fields: station_lan_networks, scada_and_transport_infrastructure)
+- "PRT" → Protection (fields: transformer_protection, breaker_protection)
+- "STE" → Site Preparation (fields: grading_and_roads, drainage_and_water_management)
+- "STR" → Structures (fields: steel_and_station_structures, transformer_and_equipment_structures)
+- "MET" → Metering (fields: new_metering_installations, existing_metering_retain_or_update)
+- "LN" → Lines (fields: line_relocations_and_bypasses, line_rerouting_and_extensions)
 
 COMPONENT IDENTIFICATION RULES:
 1. Look for explicit mentions of these component codes in document titles, section headers, or content
 2. Look for component descriptions that match the full names (e.g., "Electrical" maps to "ELE")
 3. Analyze scope of work and required activities to determine which components they relate to
 4. DO NOT assume or infer components - only use components that are explicitly mentioned or clearly described
-5. Each component should have its own "scope_of_work" and "required_activities"
+5. Each component must have ALL 4 fields: scope_of_work, required_activities, and 2 component-specific fields
 
-For each identified component, extract:
+For each identified component, extract ALL 4 fields:
 
 **SCOPE_OF_WORK for each component**: You are an expert business and technical writer. 
 Your task is to summarize the 'Scope of Work' related to this SPECIFIC COMPONENT from ALL the provided content into a concise paragraph, 
@@ -437,8 +473,7 @@ RULES:
 - Use information from both Document Intelligence text and first 10 pages comprehensive content
 - Look for scope sections in tables and figures from first 10 pages that relate to this component
 - Only include content that is relevant to this specific component (ELE, FND, AUX, etc.)
-
-Extract and summarize the scope of work content for this specific component from all the comprehensive document content.
+- If not found, return: "not mentioned in document"
 
 **REQUIRED_ACTIVITIES for each component**: You are an expert summarizer for the section *Required Activities* for this SPECIFIC COMPONENT. 
 The summarized content can contain up to 7 lines of 50 words for this section related to this component only.
@@ -455,11 +490,55 @@ Instructions:
 - **Use information from both Document Intelligence text AND first 10 pages content**
 - **Check first 10 pages tables and figures for activity information** related to this component
 - **Only include activities that are relevant to this specific component (ELE, FND, AUX, etc.)**
-- **If no clear information is found for this component, use empty string** 
+- **If no clear information is found for this component, return: "not mentioned in document"**
 
-Extract and summarize the required activities for this specific component from all the comprehensive document content.
+**COMPONENT-SPECIFIC FIELDS** (extract these based on the component type):
 
-If no components can be clearly identified, return empty components object: {{}}
+**FOR ELE (Electrical) Component:**
+- **voltage_class**: Extract voltage levels mentioned (e.g., "115kV", "230kV", "44kV"). Look for voltage specifications in electrical equipment descriptions. Example: "115kV" or "230kV". If not found: "not mentioned in document"
+- **transformer**: Extract transformer specifications (e.g., "230/115kV autotransformers (150/200/250MVA)"). Look for transformer ratings, types, and capacities. Example: "230/115kV autotransformers (150/200/250MVA)". If not found: "not mentioned in document"
+
+**FOR FND (Foundations) Component:**
+- **transformer_foundations**: Extract information about transformer foundation work (e.g., "230kV transformer foundations with spill containment"). Look for foundation specifications for transformers. If not found: "not mentioned in document"
+- **equipment_support_foundations**: Extract information about equipment support foundations (e.g., "breaker foundations for 115kV/230kV SF6 breakers"). Look for foundation work for electrical equipment. If not found: "not mentioned in document"
+
+**FOR AUX (Auxiliary) Component:**
+- **HVAC_and_FAS**: Extract HVAC and Fire Alarm System information (e.g., "Review and upgrade HVAC and Fire Alarm System in existing buildings"). Look for HVAC, ventilation, and fire safety systems. If not found: "not mentioned in document"
+- **HADs_arrangements**: Extract HADs (Hazardous Area Detection) arrangements (e.g., "Provide arrangement layout of HADs for new T24 transformer"). Look for hazard detection or arrangement layouts. If not found: "not mentioned in document"
+
+**FOR CNT (Control) Component:**
+- **control_design_packages**: Extract control design package information (e.g., "Provide complete control design package as per latest BES standard"). Look for control system design work. If not found: "not mentioned in document"
+- **SCADA_infrastructure**: Extract SCADA infrastructure information (e.g., "Install new SCADA infrastructure at control buildings"). Look for SCADA system installations or upgrades. If not found: "not mentioned in document"
+
+**FOR EQP (Equipment) Component:**
+- **bus_systems**: Extract bus system information (e.g., "Install new 2x2303kcmil ASC drops from high-level bus to breaker disconnect switch"). Look for bus installation or modification work. If not found: "not mentioned in document"
+- **circuit_breakers_and_disconnects**: Extract circuit breaker and disconnect information (e.g., "Install one new 3000A SF6 circuit breaker"). Look for breaker and disconnect switch installations. If not found: "not mentioned in document"
+
+**FOR TEL (Telecom) Component:**
+- **station_lan_networks**: Extract station LAN network information (e.g., "Design and install new BES station LAN for 230kV and 115kV systems"). Look for network infrastructure work. If not found: "not mentioned in document"
+- **scada_and_transport_infrastructure**: Extract SCADA transport infrastructure (e.g., "Configure local and remote routers to provide direct SCADA connectivity"). Look for communication transport systems. If not found: "not mentioned in document"
+
+**FOR PRT (Protection) Component:**
+- **transformer_protection**: Extract transformer protection information (e.g., "Design and install protections for new 230/28kV transformers 3T1 and 3T2"). Look for transformer protection schemes. If not found: "not mentioned in document"
+- **breaker_protection**: Extract breaker protection information (e.g., "230kV Circuit Switcher 3DS-MTU for outage staging"). Look for circuit breaker protection systems. If not found: "not mentioned in document"
+
+**FOR STE (Site Preparation) Component:**
+- **grading_and_roads**: Extract grading and road information (e.g., "Provide grading for 72,030 sq m new station yard including asphalt road"). Look for site grading and road construction work. If not found: "not mentioned in document"
+- **drainage_and_water_management**: Extract drainage system information (e.g., "Provide one drainage system with 653m main drain, 5404m underdrain"). Look for drainage and water management systems. If not found: "not mentioned in document"
+
+**FOR STR (Structures) Component:**
+- **steel_and_station_structures**: Extract steel and station structure information (e.g., "Provide structural steel design for PowerCo TS station structures"). Look for structural steel design work. If not found: "not mentioned in document"
+- **transformer_and_equipment_structures**: Extract transformer and equipment structure information (e.g., "Design structures for two 230kV transformers with spill containment area"). Look for equipment support structures. If not found: "not mentioned in document"
+
+**FOR MET (Metering) Component:**
+- **new_metering_installations**: Extract new metering installation information (e.g., "Design twelve new IESO Market Rules compliant 3EL metering installations"). Look for new meter installations. If not found: "not mentioned in document"
+- **existing_metering_retain_or_update**: Extract existing metering information (e.g., "Retain existing LV metering as per Appendix E"). Look for existing meter modifications. If not found: "not mentioned in document"
+
+**FOR LN (Lines) Component:**
+- **line_relocations_and_bypasses**: Extract line relocation and bypass information (e.g., "Relocation of 115kV and 230kV lines for new West 115kV yard"). Look for transmission line relocation work. If not found: "not mentioned in document"
+- **line_rerouting_and_extensions**: Extract line rerouting and extension information (e.g., "Reroute M5G to new east yard bay"). Look for line rerouting and extension projects. If not found: "not mentioned in document"
+
+If no components can be clearly identified, return empty components object: (empty object)
 
 **RESPONSE FORMAT - ONLY JSON:**
 {{
@@ -470,22 +549,29 @@ If no components can be clearly identified, return empty components object: {{}}
    "prepared_date": "date in YYYY-MM-DD format or empty string",
    "components": {{
      "ELE": {{
-       "scope_of_work": "electrical scope content or empty string",
-       "required_activities": "electrical activities content or empty string",
+       "scope_of_work": "electrical scope content or not mentioned in document",
+       "required_activities": "electrical activities content or not mentioned in document",
+       "voltage_class": "voltage level or not mentioned in document",
+       "transformer": "transformer specifications or not mentioned in document"
      }},
      "AUX": {{
-       "scope_of_work": "auxiliary scope content or empty string", 
-       "required_activities": "auxiliary activities content or empty string"
+       "scope_of_work": "auxiliary scope content or not mentioned in document", 
+       "required_activities": "auxiliary activities content or not mentioned in document",
+       "HVAC_and_FAS": "HVAC and FAS information or not mentioned in document",
+       "HADs_arrangements": "HADs arrangement information or not mentioned in document"
      }}
    }}
 }}
 
 **CRITICAL**: 
 - Return ONLY the JSON object. No explanation, no markdown, no extra text.
-- Use empty strings ("") for fields where no information is found
+- Use empty strings ("") for basic fields where no information is found
+- Use "not mentioned in document" for component-specific fields where no information is found
 - Only include components in the components object that are actually identified in the document
+- Please Do not Perform Mathematical Calculations or interpretations for any component's fields
 - Date must be in YYYY-MM-DD format only
 - Components must use the exact codes from the valid list above
+- Each included component MUST have all 4 fields: scope_of_work, required_activities, and 2 component-specific fields
 
 Extract the metadata now:
         """
@@ -514,7 +600,7 @@ Extract the metadata now:
             return self._get_rfi_default_metadata()
   
     def _validate_rfi_metadata(self, metadata: Dict) -> Dict:
-        """Validate and clean RFI metadata (new format)"""
+        """Validate and clean RFI metadata (enhanced format with component-specific fields)"""
         validated = {
             "project_name": "",
             "client": "",
@@ -536,29 +622,46 @@ Extract the metadata now:
                     value = value[:200] + '...'
             validated[field] = value if isinstance(value, str) else ''
         
-        # Validate components
+        # Validate components with enhanced structure
         components = metadata.get('components', {})
         if isinstance(components, dict):
             for comp_code, comp_data in components.items():
                 # Only allow valid component codes
                 if comp_code in self.valid_components and isinstance(comp_data, dict):
                     validated_comp = {}
-                    for sub_field in ['scope_of_work', 'required_activities']:
-                        sub_value = comp_data.get(sub_field, '')
+                    
+                    # Validate common fields
+                    for common_field in ['scope_of_work', 'required_activities']:
+                        sub_value = comp_data.get(common_field, '')
                         if isinstance(sub_value, str):
                             sub_value = sub_value.strip()
                             if sub_value.lower() in ['none', 'null', 'undefined', 'n/a', 'not specified']:
-                                sub_value = ''
-                        validated_comp[sub_field] = sub_value if isinstance(sub_value, str) else ''
+                                sub_value = 'not mentioned in document'
+                        validated_comp[common_field] = sub_value if isinstance(sub_value, str) else 'not mentioned in document'
                     
-                    # Only add component if it has some content
-                    if validated_comp['scope_of_work'] or validated_comp['required_activities']:
+                    # Validate component-specific fields
+                    specific_fields = self.valid_components[comp_code]['specific_fields']
+                    for specific_field in specific_fields:
+                        sub_value = comp_data.get(specific_field, '')
+                        if isinstance(sub_value, str):
+                            sub_value = sub_value.strip()
+                            if sub_value.lower() in ['none', 'null', 'undefined', 'n/a', 'not specified']:
+                                sub_value = 'not mentioned in document'
+                        validated_comp[specific_field] = sub_value if isinstance(sub_value, str) else 'not mentioned in document'
+                    
+                    # Only add component if it has some meaningful content (not all "not mentioned in document")
+                    has_content = any(
+                        value and value != 'not mentioned in document' 
+                        for value in validated_comp.values()
+                    )
+                    
+                    if has_content:
                         validated['components'][comp_code] = validated_comp
         
         return validated
   
     def _get_rfi_default_metadata(self) -> Dict:
-        """Get default RFI metadata structure (new format)"""
+        """Get default RFI metadata structure (enhanced format)"""
         return {
             "project_name": "",
             "client": "",
@@ -571,18 +674,18 @@ Extract the metadata now:
     def get_status_info(self) -> Dict:
         """Get status information about the enhanced RFI metadata extractor"""
         return {
-            "extractor_type": "RFI_METADATA_ENHANCED_COMPONENT_FORMAT",
+            "extractor_type": "RFI_METADATA_ENHANCED_COMPONENT_FORMAT_WITH_SPECIFIC_FIELDS",
             "fields_count": len(self.new_rfi_fields),
             "fields": self.new_rfi_fields,
-            "components": list(self.valid_components.keys()),
+            "components": {comp_code: comp_info for comp_code, comp_info in self.valid_components.items()},
+            "total_components": len(self.valid_components),
             "chunking_enabled": False,
             "verbalization_enabled": False,
             "first_10_pages_extraction": True,
+            "component_specific_fields": True,
+            "fields_per_component": 4,  # scope_of_work + required_activities + 2 specific fields
             "client_initialized": self.verbalizer.client is not None,
             "status": "ready" if self.verbalizer.client else "client_unavailable",
             "reuses_existing_client": True,
-            "enhancement": "DI_text + first_10_pages_comprehensive_content + component_format"
+            "enhancement": "DI_text + first_10_pages_comprehensive_content + enhanced_component_format_with_specific_fields"
         }
-    
-    ####Metadata##
-    ####Metadata##

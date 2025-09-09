@@ -1,0 +1,49 @@
+[
+  {
+    "chunk_id": "b24cf8a4",
+    "project_id": "proj_t2_docx",
+    "file_name": "t2.docx",
+    "content_type": "document",
+    "created_at": "2025-09-09T11:45:51.806771",
+    "project_name": "DeCew Falls GS No. 1 & 2 (ND1 & NF23) Communications Site Upgrade Technical Specification",
+    "client": "Ontario Power Generation",
+    "industry": "Power & Energy",
+    "region": "Ontario, Canada",
+    "prepared_date": "2024-03-07",
+    "components": {
+      "ELE": {
+        "scope_of_work": "The project involves designing, constructing, installing, and commissioning a new communications network at the DeCew site, including establishing communication rooms with power system reliability for up to 8 hours of runtime upon loss of station service power. Electrical systems include distribution panels, transformers, UPS solutions, and critical distribution panels for IT equipment.",
+        "required_activities": "Prepare and install 600VAC distribution panels, 600/120/240V lighting transformers, and UPS battery solutions for IT loads. Design and commission critical distribution panels for IT equipment. Ensure compatibility with existing electrical systems and compliance with standards. Conduct ESA inspections and obtain certifications for all electrical installations.",
+        "voltage_class": "600VAC, 120/240V",
+        "transformer": "600/120/240V lighting transformer"
+      },
+      "AUX": {
+        "scope_of_work": "The auxiliary systems include HVAC and fire protection systems for the new modular E-House and communication distribution rooms. The HVAC system will maintain temperature and humidity levels for IT/OT equipment, while fire protection systems will ensure safety and compliance with NFPA and OBC standards.",
+        "required_activities": "Design and install HVAC systems to control temperature and humidity for IT/OT equipment. Implement fire detection, monitoring, and suppression systems compatible with existing infrastructure. Ensure compliance with NFPA and OBC standards. Conduct reviews and inspections of emergency lighting systems and integrate them with the Nexus RF wireless system.",
+        "HVAC_and_FAS": "HVAC systems for temperature and humidity control, fire detection, monitoring, and suppression systems",
+        "HADs_arrangements": "not mentioned in document"
+      },
+      "CNT": {
+        "scope_of_work": "The control systems scope includes designing and implementing SCADA infrastructure and control systems for the DeCew site. This involves integrating SCADA systems with IT and OT networks and ensuring compatibility with existing infrastructure.",
+        "required_activities": "Install SCADA network racks and configure SCADA routers and switches. Relocate existing SCADA equipment to new communication rooms. Ensure dual redundant power supplies for SCADA systems. Conduct testing and commissioning of SCADA infrastructure to ensure operational reliability.",
+        "control_design_packages": "not mentioned in document",
+        "SCADA_infrastructure": "SCADA network racks, routers, and switches"
+      },
+      "TEL": {
+        "scope_of_work": "The telecom scope includes designing and implementing new fiber optic and Cat6a network connectivity at the DeCew site. This involves establishing LAN networks, SCADA transport infrastructure, and external fiber connections for IT and SCADA systems.",
+        "required_activities": "Install fiber optic cables and Cat6a network connections for IT and SCADA systems. Configure NRBN WAN switches for external fiber services. Conduct testing and certification of fiber and copper cabling. Ensure compliance with ANSI/TIA standards and provide 25-year warranties for cabling systems.",
+        "station_lan_networks": "New LAN networks for IT and SCADA systems",
+        "scada_and_transport_infrastructure": "Fiber optic and Cat6a network connectivity for SCADA transport"
+      },
+      "MET": {
+        "scope_of_work": "The metering scope involves relocating existing revenue metering cabinets and installing new communication racks for revenue metering systems. This includes ensuring dual power sources and integrating metering systems with the new communication rooms.",
+        "required_activities": "Relocate existing revenue metering cabinets to new communication rooms. Install new communication racks for revenue metering systems. Ensure dual power sources for metering cabinets and integrate them with IT and SCADA networks. Conduct reviews and obtain approvals from relevant stakeholders.",
+        "new_metering_installations": "New communication racks for revenue metering systems",
+        "existing_metering_retain_or_update": "Relocation of existing revenue metering cabinets"
+      }
+    },
+    "text_elements_count": 2173,
+    "total_content_length": 117857,
+    "processing_timestamp": "2025-09-09T11:45:51.807103"
+  }
+]
