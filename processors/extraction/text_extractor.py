@@ -123,8 +123,8 @@ class SimpleChunker:
                 re.match(r'^\d+\.?\d*\s+[A-Z]', first_meaningful_line) or
                 len(first_meaningful_line) < 100):
                 return {
-                    'section_no': 'auto',
-                    'section_name': first_meaningful_line[:50]
+                    'section_no': 0.0,
+                    'section_name': "Pre-Introduction"
                 }
         
         return {
@@ -159,7 +159,8 @@ class SimpleChunker:
             vendor_name = 'tetratech'
         
         chunk = {
-            'chunk_id': str(uuid.uuid4())[:8],
+            # 'chunk_id': str(uuid.uuid4())[:8],
+            'chunk_id': str(uuid.uuid4()),
             'file_name': file_name,
             'project_id': project_id,
             'section_name': section_info['section_name'],

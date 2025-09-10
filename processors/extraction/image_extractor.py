@@ -299,7 +299,8 @@ class ImageExtractor:
                
                 # Create image chunk with LLM metadata integration
                 chunk = {
-                    'chunk_id': str(uuid.uuid4())[:8],
+                    # 'chunk_id': str(uuid.uuid4())[:8],
+                    'chunk_id': str(uuid.uuid4()),
                     'file_name': file_name,
                     'project_id': project_id,
                     'section_name': section_mapping['section_name'],  # From closest text chunk
