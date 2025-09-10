@@ -301,7 +301,7 @@ class SimpleChunkerRFI:
 
             pricing = document_metadata.get('pricing', '')
             if not pricing:
-                pricing = "3.5M USD"  # Default fallback
+                pricing = "null"  # Default fallback
             
             # Components - ENHANCED: Extract all components with specific fields from metadata
             components = document_metadata.get('components', {})

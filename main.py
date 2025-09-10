@@ -353,6 +353,10 @@ class DocumentProcessorMain:
                 print(f"  🌍 Industry: {chunk.get('industry', 'N/A')}")
                 print(f"  📍 Region: {chunk.get('region', 'N/A')}")
                 print(f"  📅 Prepared Date: {chunk.get('prepared_date', 'N/A')}")
+                print(f"  🏞️ Field Type: {chunk.get('field_type', 'N/A')}")
+                print(f"  🔌 Voltage Class: {chunk.get('voltage_class', 'N/A')}")
+                print(f"  📃 Contract Types: {chunk.get('contract_types', 'N/A')}")
+                print(f"  💰 Pricing: {chunk.get('pricing', 'N/A')}")
                 
                 # Print components (enhanced format with specific fields)
                 components = chunk.get('components', {})

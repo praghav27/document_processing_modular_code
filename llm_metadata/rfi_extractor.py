@@ -598,6 +598,7 @@ them into one of the following standardized voltage classes only:
 Rules :
 - Identify the voltage mentioned in the document. (examples: 120V, 13.8 kV, 230 kV, 735 kV, ±500 kV).
 - Based on the scope of work, Assign the voltage class for the voltage value obtained from the document.
+- While Giving the output make sure that respective voltage range is mentioned along with the voltage class.(example "Distribution (120 V - 34.5 kV)").
 - If no voltage values are present, return exactly: "Not mentioned in the document"
 
 
@@ -617,13 +618,11 @@ Rules :
  - Classify the contract type using exactly one of the three output options listed.
  - If none of the contract types are evident, output "Not mentioned in the document".
 
-10. **pricing**: Extract cost/budget/pricing information.
-Standardize format as a single string:
-Range → "1M-2M USD"
-Single value → "3.5M USD"
-Always put the currency at the end.
-If pricing is in other currencies (CAD, EUR, GBP, INR), convert to USD if possible.
-If no pricing: "not mentioned in document".
+10. **pricing**: Extract the specific project value, contract amount, or total project cost mentioned in the RFP.
+-Exact Contract Values: Extract the precise value if mentioned (e.g., "$2.5 million", "$500,000", "$1.2M contract").
+-Total Project Cost / Contract Amounts / Project Budget / Financial Scope: Same as above — extract exact values wherever stated.
+-Ballpark Estimate (Range): If no exact value is given but a range is provided, capture it as a ballpark estimate (e.g., "$1M–$2M", "between $5–7 million").
+-If neither exact value nor range is mentioned, return "Not mentioned in the document".
 
 Rules : 
 
