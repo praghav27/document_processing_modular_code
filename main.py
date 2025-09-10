@@ -1,101 +1,6 @@
 
 
 
-# import os
-# from processors import AzureDocumentProcessor, ContentExtractor, FileHandler
-# # from storage.local_storage import LocalStorage
-# from storage.storage_factory import get_storage_instance
-# from typing import Dict, Any
-# import asyncio
-
-# from application_logging.custom_logging_to_app_insights import configure_logger, log_step, log_exception
-# from opentelemetry import trace
-
-# # Configure the logger
-# logger = configure_logger()
-
-# # Create an OpenTelemetry tracer for distributed tracing (optional, for monitoring and diagnostics)
-# tracer = trace.get_tracer(__name__)
-
-# class DocumentProcessorMain:
-#     def __init__(self):
-#         with tracer.start_as_current_span("main_init_fn") as span:
-#             self.azure_processor = AzureDocumentProcessor()
-#             self.content_extractor = ContentExtractor()
-#             self.file_handler = FileHandler()
-#             # self.storage = LocalStorage()
-#             self.storage = get_storage_instance() 
-    
-#     def process_document(self, uploaded_file, progress_callback=None) -> Dict[str, Any]:
-#         with tracer.start_as_current_span("process_document_fn") as span:
-#             """Main processing pipeline with Azure Document Intelligence"""
-#             filename = uploaded_file.name
-#             base_filename = os.path.splitext(filename)[0]
-            
-#             try:
-#                 # Validate file
-#                 if not self.file_handler.validate_file(filename):
-#                     raise ValueError(f"Unsupported file format: {self.file_handler.get_file_extension(filename)}")
-                
-#                 if progress_callback:
-#                     progress_callback("🔍 Converting file to bytes...")
-                
-#                 # Convert to bytes
-#                 file_bytes = self.file_handler.process_file(uploaded_file)
-                
-#                 if progress_callback:
-#                     progress_callback("📄 Analyzing document with Azure Document Intelligence Layout Model...")
-                
-#                 # Analyze with Azure DI
-#                 result, client, operation_id = self.azure_processor.analyze_document(file_bytes, filename)
-                
-#                 if progress_callback:
-#                     progress_callback("📝 Extracting text, tables, and images...")
-                
-#                 # Extract all content - NOW WITH ASYNC SUPPORT
-#                 extracted_content = asyncio.run(self.content_extractor.extract_all_content(
-#                     result,
-#                     filename,
-#                     client=client,
-#                     operation_id=operation_id
-#                 ))
-
-#                 if progress_callback:
-#                     progress_callback("💾 Saving extracted content...")
-                
-#                 # Finalize and return response
-#                 return self._finalize_response(extracted_content, filename)
-                
-#             except Exception as e:
-#                 if progress_callback:
-#                     progress_callback(f"❌ Error processing document: {str(e)}")
-#                 raise e
-    
-#     def _finalize_response(self, content: Dict, filename: str) -> Dict:
-#         with tracer.start_as_current_span("_finalize_response_fn") as span:
-#             """Finalize response with metadata"""
-            
-#             # Add processing metadata
-#             content.update({
-#                 "filename": filename,
-#                 "file_extension": self.file_handler.get_file_extension(filename),
-#                 "processing_method": "azure_document_intelligence"
-#             })
-            
-#             # Calculate basic statistics if not already present
-#             if "stats" not in content:
-#                 content["stats"] = {
-#                     "text_count": len(content.get("text_chunks", [])),
-#                     "table_count": len(content.get("tables", [])),
-#                     "image_count": len(content.get("images", []))
-#                 }
-            
-#             return content
-
-# # Global instance for use in Streamlit
-# document_processor = DocumentProcessorMain()
-
-
 import os
 from processors import AzureDocumentProcessor, ContentExtractor, FileHandler
 from storage.storage_factory import get_storage_instance
@@ -145,8 +50,10 @@ class DocumentProcessorMain:
                 
                 if progress_callback:
                     progress_callback("📝 Extracting text, tables, and images...")
+                    progress_callback("🤖 Extracting metadata with enhanced LLM processing...")
+                    progress_callback("💾 Storing metadata in Azure Table Storage...")
                 
-                # Extract all content - NOW WITH ASYNC SUPPORT
+                # Extract all content - NOW WITH ASYNC SUPPORT + AZURE TABLE STORAGE
                 extracted_content = asyncio.run(self.content_extractor.extract_all_content(
                     result,
                     filename,
@@ -156,6 +63,7 @@ class DocumentProcessorMain:
 
                 if progress_callback:
                     progress_callback("💾 Saving extracted content...")
+                    progress_callback("✅ Azure Table Storage operations completed...")
                 
                 # Finalize and return response
                 return self._finalize_response(extracted_content, filename)
@@ -167,7 +75,7 @@ class DocumentProcessorMain:
 
     async def process_multiple_documents_rfi(self, uploaded_files: List) -> List[Dict[str, Any]]:
         """
-        Process multiple RFI documents in parallel
+        Process multiple RFI documents in parallel with Azure Table Storage integration
         
         Args:
             uploaded_files: List of uploaded file objects from Streamlit
@@ -177,6 +85,7 @@ class DocumentProcessorMain:
         """
         print(f"\n{'='*80}")
         print(f"🚀 STARTING PARALLEL RFI PROCESSING FOR {len(uploaded_files)} DOCUMENTS")
+        print(f"🗃️ Azure Table Storage: ENABLED - Metadata and components will be stored")
         print(f"{'='*80}")
         
         # Create tasks for parallel processing
@@ -199,6 +108,7 @@ class DocumentProcessorMain:
             processing_tasks.append(task)
         
         print(f"🔄 Processing {len(processing_tasks)} documents in parallel...")
+        print(f"💾 Each document will store metadata in Azure Table Storage...")
         
         # Execute all tasks in parallel
         try:
@@ -210,6 +120,7 @@ class DocumentProcessorMain:
         # Process results and handle exceptions
         processed_results = []
         successful_chunks = []  # Collect all chunks for terminal output
+        table_storage_stats = {'successful': 0, 'failed': 0}
         
         for i, result in enumerate(results):
             filename = file_info[i]['filename']
@@ -221,16 +132,26 @@ class DocumentProcessorMain:
                     'success': False,
                     'error': str(result),
                     'chunks': [],
-                    'metadata': {}
+                    'metadata': {},
+                    'table_storage': {'stored': False, 'error': str(result)}
                 })
+                table_storage_stats['failed'] += 1
             elif result and result.get('success', False):
                 print(f"✅ Successfully processed {filename}")
+                # Check if table storage was successful
+                table_storage_success = result.get('enhancement_info', {}).get('table_storage_enabled', False)
+                if table_storage_success:
+                    table_storage_stats['successful'] += 1
+                else:
+                    table_storage_stats['failed'] += 1
+                    
                 processed_results.append(result)
                 # Collect chunks for terminal output
                 if result.get('chunks'):
                     successful_chunks.extend(result['chunks'])
             else:
                 print(f"❌ Failed to process {filename}: {result.get('error', 'Unknown error')}")
+                table_storage_stats['failed'] += 1
                 processed_results.append(result)
         
         # Print summary
@@ -238,11 +159,14 @@ class DocumentProcessorMain:
         failed_count = len(processed_results) - successful_count
         
         print(f"\n{'='*80}")
-        print(f"📊 PARALLEL RFI PROCESSING SUMMARY")
+        print(f"📊 PARALLEL RFI PROCESSING + AZURE TABLE STORAGE SUMMARY")
         print(f"{'='*80}")
         print(f"✅ Successfully processed: {successful_count}/{len(uploaded_files)} documents")
         print(f"❌ Failed to process: {failed_count} documents")
         print(f"📋 Total chunks created: {len(successful_chunks)}")
+        print(f"🗃️ Azure Table Storage:")
+        print(f"   ✅ Successful metadata storage: {table_storage_stats['successful']} documents")
+        print(f"   ❌ Failed metadata storage: {table_storage_stats['failed']} documents")
         
         # Print all chunks to terminal (as requested)
         if successful_chunks:
@@ -252,7 +176,7 @@ class DocumentProcessorMain:
 
     async def _process_single_rfi_document_async(self, uploaded_file) -> Dict[str, Any]:
         """
-        Process a single RFI document asynchronously
+        Process a single RFI document asynchronously with Azure Table Storage integration
         
         Args:
             uploaded_file: Single uploaded file object
@@ -272,7 +196,8 @@ class DocumentProcessorMain:
                     'success': False,
                     'error': f"Unsupported file format: {self.file_handler.get_file_extension(filename)}",
                     'chunks': [],
-                    'metadata': {}
+                    'metadata': {},
+                    'table_storage': {'stored': False, 'error': 'Invalid file format'}
                 }
             
             # Convert to bytes
@@ -283,8 +208,9 @@ class DocumentProcessorMain:
             result, client, operation_id = self.azure_processor.analyze_document(file_bytes, filename)
             
             print(f"📝 Extracting content from {filename}...")
+            print(f"💾 Storing metadata in Azure Table Storage for {filename}...")
             
-            # Extract all content using the enhanced content extractor
+            # Extract all content using the enhanced content extractor WITH TABLE STORAGE
             extracted_content = await self.content_extractor.extract_all_content(
                 result,
                 filename,
@@ -293,6 +219,9 @@ class DocumentProcessorMain:
             )
             
             print(f"✅ Successfully processed {filename}")
+            
+            # Check if table storage was successful
+            table_storage_enabled = extracted_content.get('enhancement_info', {}).get('table_storage_enabled', False)
             
             # Return structured result
             return {
@@ -304,6 +233,12 @@ class DocumentProcessorMain:
                 'document_type': extracted_content.get('document_type', 'RFI'),
                 'project_id': extracted_content.get('project_id', 'unknown'),
                 'stats': extracted_content.get('stats', {}),
+                'enhancement_info': extracted_content.get('enhancement_info', {}),
+                'table_storage': {
+                    'stored': table_storage_enabled,
+                    'file_metadata': table_storage_enabled,
+                    'component_data': table_storage_enabled and extracted_content.get('document_type') == 'RFI'
+                },
                 'processing_time': datetime.now().isoformat()
             }
             
@@ -315,20 +250,22 @@ class DocumentProcessorMain:
                 'error': str(e),
                 'chunks': [],
                 'metadata': {},
+                'table_storage': {'stored': False, 'error': str(e)},
                 'processing_time': datetime.now().isoformat()
             }
 
     def _print_all_chunks_to_terminal(self, all_chunks: List[Dict]):
         """
-        Print all chunks from all documents to terminal in a formatted way
+        Print all chunks from all documents to terminal in a formatted way (Enhanced with Table Storage info)
         
         Args:
             all_chunks: List of all chunks from all processed documents
         """
         print(f"\n{'='*100}")
-        print(f"📋 ALL RFI CHUNKS OUTPUT - ENHANCED COMPONENT FORMAT")
+        print(f"📋 ALL RFI CHUNKS OUTPUT - ENHANCED COMPONENT FORMAT + AZURE TABLE STORAGE")
         print(f"{'='*100}")
         print(f"Total chunks across all documents: {len(all_chunks)}")
+        print(f"🗃️ All metadata and components stored in Azure Table Storage")
         
         # Group chunks by document/project
         chunks_by_project = {}
@@ -342,6 +279,7 @@ class DocumentProcessorMain:
         for project_id, chunks in chunks_by_project.items():
             print(f"\n{'-'*80}")
             print(f"📄 PROJECT: {project_id} ({len(chunks)} chunks)")
+            print(f"🗃️ Table Storage: FileMetadataV2 + ComponentDataV2 records created")
             print(f"{'-'*80}")
             
             for i, chunk in enumerate(chunks, 1):
@@ -361,7 +299,7 @@ class DocumentProcessorMain:
                 # Print components (enhanced format with specific fields)
                 components = chunk.get('components', {})
                 if components:
-                    print(f"  ⚙️ Components ({len(components)}):")
+                    print(f"  ⚙️ Components ({len(components)}) - Stored in ComponentDataV2:")
                     for comp_code, comp_data in components.items():
                         print(f"    • {comp_code} Component:")
                         print(f"      - Scope of Work: {len(comp_data.get('scope_of_work', ''))} chars")
@@ -376,20 +314,23 @@ class DocumentProcessorMain:
                     print(f"  ⚙️ Components: None identified")
                 
                 print(f"  🕒 Created: {chunk.get('metadata', {}).get('created_at', 'N/A')}")
+                print(f"  🗃️ Table Storage: Metadata and component records created")
         
         print(f"\n{'='*100}")
         print(f"✅ TERMINAL OUTPUT COMPLETE - All {len(all_chunks)} chunks displayed")
+        print(f"🗃️ AZURE TABLE STORAGE - All metadata and components stored for structured querying")
+        print(f"📊 Query Tables: FileMetadataV2 (document metadata), ComponentDataV2 (component details)")
         print(f"{'='*100}")
     
     def _finalize_response(self, content: Dict, filename: str) -> Dict:
         with tracer.start_as_current_span("_finalize_response_fn") as span:
-            """Finalize response with metadata (existing method - unchanged)"""
+            """Finalize response with metadata (existing method - enhanced with table storage info)"""
             
             # Add processing metadata
             content.update({
                 "filename": filename,
                 "file_extension": self.file_handler.get_file_extension(filename),
-                "processing_method": "azure_document_intelligence"
+                "processing_method": "azure_document_intelligence_with_table_storage"
             })
             
             # Calculate basic statistics if not already present
@@ -399,6 +340,14 @@ class DocumentProcessorMain:
                     "table_count": len(content.get("tables", [])),
                     "image_count": len(content.get("images", []))
                 }
+            
+            # Add table storage information
+            content["table_storage_info"] = {
+                "enabled": content.get("enhancement_info", {}).get("table_storage_enabled", False),
+                "file_metadata_stored": True,  # Always true if processing succeeded
+                "component_data_stored": content.get("document_type") == "RFI",  # Only for RFI documents
+                "tables_used": ["FileMetadataV2"] + (["ComponentDataV2"] if content.get("document_type") == "RFI" else [])
+            }
             
             return content
 

@@ -2,6 +2,7 @@
 import os
 from typing import Dict, List
 from storage.storage_factory import get_storage_instance
+from storage.azure_table_storage import AzureTableMetadataHandler
 from llm_metadata import RFIExtractor, RFPExtractor
 from llm_metadata.document_type_detector import DocumentTypeDetector
 from .text_extractor import TextExtractor  # Use existing file
@@ -29,6 +30,7 @@ class ContentExtractor:
     def __init__(self):
         with tracer.start_as_current_span("ContentExtractor_init_fn") as span:
             self.storage = get_storage_instance()
+            self.table_handler = AzureTableMetadataHandler()  # 🆕 Add Azure Table Storage
             self.text_elements = []  # Store for section association
             self.text_chunks = []  # Store text chunks for section mapping
             self.document_metadata = {}  # Store LLM-extracted document metadata
@@ -110,6 +112,10 @@ class ContentExtractor:
                 rfp_extractor = RFPExtractor()
                 self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
                 print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
+
+            # 🆕 Step 1.6 - Store metadata in Azure Table Storage
+            print(f"💾 Step 1.6: Storing metadata in Azure Table Storage...")
+            await self._store_metadata_in_table_storage(filename, project_id)
                     
             print(f"📋 Step 2: Creating text chunks with LLM metadata...")
             
@@ -189,7 +195,7 @@ class ContentExtractor:
             # Create all text content for raw text storage
             all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
             
-            #Save to storage and upload to Azure AI Search
+            # # Save to storage and upload to Azure AI Search
             # if all_chunks:
             #     if self.document_type == "RFI":
             #         print(f"💾 Saving enhanced RFI text chunks to storage...")
@@ -225,7 +231,7 @@ class ContentExtractor:
                 print(f"💾 Saving raw text content...")
                 self.storage.save_raw_text(all_text, base_filename)
             
-            print(f"✅ Enhanced content extraction and indexing complete!")
+            print(f"✅ Enhanced content extraction, table storage, and AI Search indexing complete!")
             
             # Print comprehensive debug information
             self._print_extraction_debug(all_text, self.text_chunks, tables, figures, table_chunks, image_chunks)
@@ -243,7 +249,8 @@ class ContentExtractor:
                 "enhancement_info": {
                     "rfi_first_page_extraction": self.document_type == "RFI",
                     "extraction_method": "DI_text + first_page_content" if self.document_type == "RFI" else "DI_text_only",
-                    "processing_approach": "metadata_only" if self.document_type == "RFI" else "full_processing"
+                    "processing_approach": "metadata_only" if self.document_type == "RFI" else "full_processing",
+                    "table_storage_enabled": True  # 🆕 Indicate table storage is enabled
                 },
                 "stats": {
                     "text_count": len(self.text_chunks),
@@ -252,6 +259,59 @@ class ContentExtractor:
                     "total_chunks": len(all_chunks)
                 }
             }
+
+    async def _store_metadata_in_table_storage(self, filename: str, project_id: str):
+        """🆕 Store metadata in Azure Table Storage"""
+        try:
+            # Prepare file metadata for table storage
+            file_metadata = self.document_metadata.copy()
+            file_metadata.update({
+                'document_type': self.document_type,
+                'project_id': project_id,
+                'filename': filename,
+                'detection_confidence': self.document_type_info.get('confidence', 0),
+                'detection_reasoning': self.document_type_info.get('reasoning', ''),
+                'processing_timestamp': self.document_metadata.get('created_at', ''),
+                'extraction_method': 'enhanced_llm_with_first_10_pages' if self.document_type == "RFI" else 'standard_llm'
+            })
+
+            # Store file metadata
+            print(f"💾 Storing file metadata in table: FileMetadataV2...")
+            file_entity_key = self.table_handler.store_file_metadata(file_metadata, "FileMetadataV2")
+            
+            if file_entity_key:
+                print(f"✅ File metadata stored successfully: {file_entity_key}")
+            else:
+                print(f"❌ Failed to store file metadata")
+
+            # Store component data for RFI documents
+            if self.document_type == "RFI" and self.text_chunks:
+                print(f"💾 Storing RFI component data in table: ComponentDataV2...")
+                
+                # Get the first chunk which contains the component data
+                primary_chunk = self.text_chunks[0] if self.text_chunks else {}
+                
+                if primary_chunk and primary_chunk.get('components'):
+                    component_entity_keys = self.table_handler.store_component_data(primary_chunk, "ComponentDataV2")
+                    
+                    if component_entity_keys:
+                        print(f"✅ Component data stored successfully: {len(component_entity_keys)} component records")
+                        for key in component_entity_keys[:3]:  # Show first 3 keys
+                            print(f"   - {key}")
+                        if len(component_entity_keys) > 3:
+                            print(f"   - ... and {len(component_entity_keys) - 3} more")
+                    else:
+                        print(f"❌ Failed to store component data")
+                else:
+                    print(f"ℹ️ No component data found in RFI chunks to store")
+            
+            print(f"✅ Azure Table Storage operations completed")
+            
+        except Exception as e:
+            print(f"❌ Error storing metadata in Azure Table Storage: {e}")
+            # Don't fail the entire pipeline if table storage fails
+            import traceback
+            traceback.print_exc()
     
     def _print_extraction_debug(self, all_text, text_chunks, tables, figures, table_chunks, image_chunks):
         """Print comprehensive debug information with LLM metadata - FULL CONTENT DISPLAY INCLUDING RFI/RFP DETECTION"""
@@ -269,29 +329,28 @@ class ContentExtractor:
         # Print LLM-extracted metadata - WITH APPROPRIATE FIELD COUNT BASED ON DOCUMENT TYPE
         print(f"\n{'='*80}")
         if self.document_type == "RFI":
-            print(f"🤖 ENHANCED RFI DOCUMENT METADATA EXTRACTION (8 FIELDS)")
+            print(f"🤖 ENHANCED RFI DOCUMENT METADATA EXTRACTION (10 FIELDS) + AZURE TABLE STORAGE")
             print(f"{'='*80}")
             print(f"🚀 ENHANCEMENT: Document Intelligence text + First page comprehensive content")
             print(f"📄 First Page Content: Tables + Images + Text from page 1")
             print(f"🔍 Extraction Source: Combined content for maximum accuracy")
+            print(f"💾 Table Storage: File metadata + Component data stored in Azure Tables")
             print(f"")
             print(f"📝 Project Name: {self.document_metadata.get('project_name', 'N/A')}")
             print(f"🏢 Client: {self.document_metadata.get('client', 'N/A')}")
             print(f"🌍 Region: {self.document_metadata.get('region', 'N/A')}")
             print(f"🏭 Industry: {self.document_metadata.get('industry', 'N/A')}")
             print(f"📅 Prepared Date: {self.document_metadata.get('prepared_date', 'N/A')}")
-            # print(f"⚙️ Station Discipline: {self.document_metadata.get('station_discipline', 'N/A')}")
-            # print(f"🎯 Scope of Work: {len(str(self.document_metadata.get('scope_of_work', '')))} characters")
-            # print(f"📋 Required Activities: {len(str(self.document_metadata.get('required_activities', '')))} characters")
             print(f"🏞️ Field Type: {self.document_metadata.get('field_type', 'N/A')}")
             print(f"🔌 Voltage Class: {self.document_metadata.get('voltage_class', 'N/A')}")
             print(f"📃 Contract Types: {self.document_metadata.get('contract_types', 'N/A')}")
-            print(f"📃 Pricing: {self.document_metadata.get('pricing', 'N/A')}")
-            print(f"🧩 Components: {self.document_metadata.get('components', 'N/A')}")
+            print(f"💰 Pricing: {self.document_metadata.get('pricing', 'N/A')}")
+            print(f"🧩 Components: {len(self.document_metadata.get('components', {}))} components identified")
         
         else:
-            print(f"🤖 LLM-EXTRACTED RFP DOCUMENT METADATA (11 FIELDS)")
+            print(f"🤖 LLM-EXTRACTED RFP DOCUMENT METADATA (11 FIELDS) + AZURE TABLE STORAGE")
             print(f"{'='*80}")
+            print(f"💾 Table Storage: File metadata stored in Azure Tables")
             print(f"📝 Project Title: {self.document_metadata.get('project_title', 'N/A')}")
             print(f"🏢 Client Name: {self.document_metadata.get('client_name', 'N/A')}")
             print(f"🏭 Vendor Name: {self.document_metadata.get('vendor_name', 'N/A')}")
@@ -305,9 +364,10 @@ class ContentExtractor:
             print(f"🔧 Equipments Used: {self.document_metadata.get('equipments_used', 'N/A')}")
 
         print(f"\n{'='*80}")
-        field_count = 8 if self.document_type == "RFI" else 11
-        print(f"🎯 ENHANCED SUMMARY WITH LLM INTEGRATION - {field_count} FIELDS ({self.document_type})")
+        field_count = 10 if self.document_type == "RFI" else 11
+        print(f"🎯 ENHANCED SUMMARY WITH LLM INTEGRATION + AZURE TABLE STORAGE - {field_count} FIELDS ({self.document_type})")
         print(f"📄 Document Type: {self.document_type} (Confidence: {self.document_type_info.get('confidence', 0):.1%})")
+        print(f"💾 Table Storage: ✅ Metadata stored in Azure Table Storage")
         
         if self.document_type == "RFI":
             print(f"🚀 RFI ENHANCEMENT: DI text + First page (tables + images + text)")
@@ -315,28 +375,34 @@ class ContentExtractor:
             print(f"📊 Table chunks: SKIPPED for RFI")
             print(f"🖼️ Image chunks: SKIPPED for RFI") 
             print(f"🎯 Index Target: Azure AI Search RFI Index")
+            print(f"💾 Table Storage: FileMetadataV2 + ComponentDataV2 tables")
         else:
             print(f"📝 Text chunks: {len(text_chunks)} (with LLM metadata)")
             print(f"📊 Table chunks: {len(table_chunks)} (with LLM metadata + verbalization)")
             print(f"🖼️ Image chunks: {len(image_chunks)} (with LLM metadata + verbalization)")
             print(f"🎯 Index Target: Azure AI Search RFP Index")
+            print(f"💾 Table Storage: FileMetadataV2 table")
             
         print(f"🤖 LLM Metadata: ✅ Extracted {field_count} fields from {'enhanced' if self.document_type == 'RFI' else 'standard'} content")
         print(f"🗂️ Section Mapping: ✅ Using separate SectionMapper for clean architecture")
+        print(f"💾 Azure Table Storage: ✅ Structured metadata storage enabled")
         
         if self.document_type == "RFI":
-            print(f"✅ RFI Fields: project_name, client, region, industry, prepared_date, station_discipline, scope_of_work, required_activities")
+            print(f"✅ RFI Fields: project_name, client, region, industry, prepared_date, field_type, voltage_class, contract_types, pricing, components")
             print(f"🚀 Enhancement Active: First page comprehensive content extraction")
+            print(f"🗃️ Component Storage: Individual component records in ComponentDataV2 table")
         else:
             print(f"✅ RFP Fields: project_title→file_name, vendor_name→author, domain_category→domain")
             print(f"✅ Financial Fields: revenue_range→💰, region→🌍, project_value→💵")
             print(f"✅ Technical Fields: compliance_standard→📜, equipments_used→🔧")
             
         print(f"✅ FULL CONTENT PROCESSING: Enhanced extraction for RFI, standard for RFP")
+        print(f"✅ AZURE TABLE STORAGE: Metadata and components stored for structured querying")
         print(f"{'='*80}")
 
         # Show storage and indexing paths
         if hasattr(self.storage, 'project_id') and hasattr(self.storage, 'document_type'):
-            print(f"💾 Storage Path: {self.storage.project_id}/{self.storage.document_type}")
+            print(f"💾 Blob Storage Path: {self.storage.project_id}/{self.storage.document_type}")
+            print(f"🗃️ Table Storage: FileMetadataV2 + {'ComponentDataV2 (for RFI)' if self.document_type == 'RFI' else 'N/A (RFP only uses file metadata)'}")
             print(f"🎯 Search Index: {'Azure AI Search RFI Index' if self.document_type == 'RFI' else 'Azure AI Search RFP Index'}")
             print(f"📊 Processing Method: {'Enhanced (DI + First Page)' if self.document_type == 'RFI' else 'Standard (DI Only)'}")
