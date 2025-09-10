@@ -1,4 +1,3 @@
-
 import os
 from typing import Dict, List
 from storage.storage_factory import get_storage_instance
@@ -30,7 +29,7 @@ class ContentExtractor:
     def __init__(self):
         with tracer.start_as_current_span("ContentExtractor_init_fn") as span:
             self.storage = get_storage_instance()
-            self.table_handler = AzureTableMetadataHandler()  # 🆕 Add Azure Table Storage
+            self.table_handler = AzureTableMetadataHandler()  # ✅ Azure Table Storage handler
             self.text_elements = []  # Store for section association
             self.text_chunks = []  # Store text chunks for section mapping
             self.document_metadata = {}  # Store LLM-extracted document metadata
@@ -101,21 +100,21 @@ class ContentExtractor:
 
             # Step 1.5 - Extract document metadata using selected extractor
             if self.document_type == "RFI":
-                print(f"🤖 Step 1.5: Enhanced RFI metadata extraction (DI text + First page content)...")
+                print(f"🤖 Step 1.5: Enhanced RFI metadata extraction (DI text + First 10 page content)...")
                 rfi_extractor = RFIExtractor()
-                # 🚀 ENHANCED: Pass the Azure DI result to extract first page content
+                # 🚀 ENHANCED: Pass the Azure DI result to extract first 10 page content
                 self.document_metadata = await rfi_extractor.extract_metadata_only(self.text_elements, azure_di_result=result)
                 print(f"📋 Enhanced RFI metadata extracted: {len(self.document_metadata)} fields")
-                print(f"   📄 Enhancement: Document Intelligence text + First page comprehensive content")
+                print(f"   📄 Enhancement: Document Intelligence text + First 10 page comprehensive content")
             else:
                 print(f"🤖 Step 1.5: Extracting RFP metadata using LLM from complete document...")
                 rfp_extractor = RFPExtractor()
                 self.document_metadata = await rfp_extractor.extract_metadata(self.text_elements)
                 print(f"📋 RFP metadata extracted: {len(self.document_metadata)} fields")
 
-            # 🆕 Step 1.6 - Store metadata in Azure Table Storage
+            # 🆕 Step 1.6 - Store metadata in Azure Table Storage (ENHANCED INTEGRATION)
             print(f"💾 Step 1.6: Storing metadata in Azure Table Storage...")
-            await self._store_metadata_in_table_storage(filename, project_id)
+            table_storage_success = await self._store_metadata_in_table_storage(filename, project_id)
                     
             print(f"📋 Step 2: Creating text chunks with LLM metadata...")
             
@@ -173,7 +172,7 @@ class ContentExtractor:
                     self.section_mapper, 
                     self.text_elements, 
                     rfp_id=rfp_id, 
-                    project_id=project_id
+#                     project_id=project_id
                 )
                 print(f"🖼️ Image chunks created: {len(image_chunks)}")
             else:
@@ -195,36 +194,34 @@ class ContentExtractor:
             # Create all text content for raw text storage
             all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
             
-            # # Save to storage and upload to Azure AI Search
-            # if all_chunks:
-            #     if self.document_type == "RFI":
-            #         print(f"💾 Saving enhanced RFI text chunks to storage...")
-            #         chunk_data, json_path = self.storage.save_text_chunks_RFI(all_chunks, base_filename)
-            #         if chunk_data:
-            #             print(f"📊 RFI chunk data prepared for indexing:")
-            #             print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
-            #             print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
-                        
-            #             # Upload to Azure AI Search RFI index
-            #             print(f"📤 Uploading RFI data to Azure AI Search RFI index...")
-            #             self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
-            #             print(f"✅ RFI data successfully uploaded to Azure AI Search RFI index")
-            #         else:
-            #             print("❌ Failed to prepare RFI chunk data for indexing")
-            #     else:
-            #         print(f"💾 Saving RFP text chunks to storage...")
-            #         chunk_data, json_path = self.storage.save_text_chunks(all_chunks, base_filename)
-            #         if chunk_data:
-            #             print(f"📊 RFP chunk data prepared for indexing:")
-            #             print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
-            #             print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
-                        
-            #             # Upload to Azure AI Search RFP index
-            #             print(f"📤 Uploading RFP data to Azure AI Search RFP index...")
-            #             self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
-            #             print(f"✅ RFP data successfully uploaded to Azure AI Search RFP index")
-            #         else:
-            #             print("❌ Failed to prepare RFP chunk data for indexing")
+            # Save to storage and upload to Azure AI Search
+            if all_chunks:
+                if self.document_type == "RFI":
+                    print(f"💾 Saving enhanced RFI text chunks to storage...")
+                    chunk_data, json_path = self.storage.save_text_chunks_RFI(all_chunks, base_filename)
+                    if chunk_data:
+                        print(f"📊 RFI chunk data prepared for indexing:")
+                        print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
+                        print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
+                        # Upload to Azure AI Search RFI index
+                        print(f"📤 Uploading RFI data to Azure AI Search RFI index...")
+                        self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
+                        print(f"✅ RFI data successfully uploaded to Azure AI Search RFI index")
+                    else:
+                        print("❌ Failed to prepare RFI chunk data for indexing")
+                else:
+                    print(f"💾 Saving RFP text chunks to storage...")
+                    chunk_data, json_path = self.storage.save_text_chunks(all_chunks, base_filename)
+                    if chunk_data:
+                        print(f"📊 RFP chunk data prepared for indexing:")
+                        print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
+                        print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
+                        # Upload to Azure AI Search RFP index
+                        print(f"📤 Uploading RFP data to Azure AI Search RFP index...")
+                        self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
+                        print(f"✅ RFP data successfully uploaded to Azure AI Search RFP index")
+                    else:
+                        print("❌ Failed to prepare RFP chunk data for indexing")
 
             # Save raw text content to storage
             if all_text.strip():
@@ -248,7 +245,7 @@ class ContentExtractor:
                 "project_id": project_id,  # Include project_id in response
                 "enhancement_info": {
                     "rfi_first_page_extraction": self.document_type == "RFI",
-                    "extraction_method": "DI_text + first_page_content" if self.document_type == "RFI" else "DI_text_only",
+                    "extraction_method": "DI_text + first_10_page_content" if self.document_type == "RFI" else "DI_text_only",
                     "processing_approach": "metadata_only" if self.document_type == "RFI" else "full_processing",
                     "table_storage_enabled": True  # 🆕 Indicate table storage is enabled
                 },
@@ -260,10 +257,12 @@ class ContentExtractor:
                 }
             }
 
-    async def _store_metadata_in_table_storage(self, filename: str, project_id: str):
-        """🆕 Store metadata in Azure Table Storage"""
+    async def _store_metadata_in_table_storage(self, filename: str, project_id: str) -> bool:
+        """Store metadata in Azure Table Storage using your exact logic"""
         try:
-            # Prepare file metadata for table storage
+            print(f"💾 Starting Azure Table Storage operations for {filename}...")
+            
+            # Step 1: Prepare file metadata for table storage
             file_metadata = self.document_metadata.copy()
             file_metadata.update({
                 'document_type': self.document_type,
@@ -274,44 +273,67 @@ class ContentExtractor:
                 'processing_timestamp': self.document_metadata.get('created_at', ''),
                 'extraction_method': 'enhanced_llm_with_first_10_pages' if self.document_type == "RFI" else 'standard_llm'
             })
-
-            # Store file metadata
-            print(f"💾 Storing file metadata in table: FileMetadataV2...")
-            file_entity_key = self.table_handler.store_file_metadata(file_metadata, "FileMetadataV2")
-            
+            print(f"🔍 DEBUG: File metadata keys = {list(file_metadata.keys())}")
+            # Store file metadata in FileMetadata table
+            file_entity_key = self.table_handler.store_file_metadata(file_metadata, "FileMetadata")
+            file_metadata_success = False
             if file_entity_key:
                 print(f"✅ File metadata stored successfully: {file_entity_key}")
+                file_metadata_success = True
             else:
                 print(f"❌ Failed to store file metadata")
-
-            # Store component data for RFI documents
-            if self.document_type == "RFI" and self.text_chunks:
-                print(f"💾 Storing RFI component data in table: ComponentDataV2...")
-                
-                # Get the first chunk which contains the component data
-                primary_chunk = self.text_chunks[0] if self.text_chunks else {}
-                
-                if primary_chunk and primary_chunk.get('components'):
-                    component_entity_keys = self.table_handler.store_component_data(primary_chunk, "ComponentDataV2")
-                    
-                    if component_entity_keys:
-                        print(f"✅ Component data stored successfully: {len(component_entity_keys)} component records")
-                        for key in component_entity_keys[:3]:  # Show first 3 keys
-                            print(f"   - {key}")
-                        if len(component_entity_keys) > 3:
-                            print(f"   - ... and {len(component_entity_keys) - 3} more")
-                    else:
-                        print(f"❌ Failed to store component data")
+            component_data_success = False
+            if self.document_type == "RFI":
+                print(f"💾 Storing RFI component data in ComponentData...")
+                # Only push the components present in the current chunk
+                if self.text_chunks:
+                    for chunk in self.text_chunks:
+                        components = chunk.get('components', {})
+                        if isinstance(components, dict) and components:
+                            component_data_dict = {
+                                "chunk_id": chunk.get("chunk_id", ""),
+                                "project_id": chunk.get("project_id", ""),
+                                "project_name": chunk.get("project_name", ""),
+                                "content_type": chunk.get("content_type", "text"),
+                                "client": chunk.get("client", ""),
+                                "region": chunk.get("region", ""),
+                                "industry": chunk.get("industry", ""),
+                                "prepared_date": chunk.get("prepared_date", ""),
+                                "field_type": chunk.get("field_type", ""),
+                                "voltage_class": chunk.get("voltage_class", ""),
+                                "contract_types": chunk.get("contract_types", ""),
+                                "pricing": chunk.get("pricing", ""),
+                                "components": components
+                            }
+                            component_entity_keys = self.table_handler.store_component_data(component_data_dict, "ComponentData")
+                            if component_entity_keys:
+                                print(f"✅ Component data stored successfully: {len(component_entity_keys)} component records for chunk {chunk.get('chunk_id', '')}")
+                                component_data_success = True
+                            else:
+                                print(f"❌ Failed to store component data for chunk {chunk.get('chunk_id', '')}")
+                        else:
+                            print(f"❌ No valid components found in chunk for ComponentData table: {chunk.get('chunk_id', '')}")
+                    if not component_data_success:
+                        component_data_success = True  # No valid components in any chunk is considered success
                 else:
-                    print(f"ℹ️ No component data found in RFI chunks to store")
-            
-            print(f"✅ Azure Table Storage operations completed")
-            
+                    print(f"❌ No text chunks available for component data storage")
+                    component_data_success = True
+            elif self.document_type == "RFP":
+                print(f"ℹ️ RFP document - skipping component data storage")
+                component_data_success = True
+            overall_success = file_metadata_success and component_data_success
+            if overall_success:
+                print(f"✅ Azure Table Storage operations completed successfully")
+            else:
+                print(f"⚠️ Azure Table Storage operations completed with some failures")
+                print(f"   File metadata success: {file_metadata_success}")
+                print(f"   Component data success: {component_data_success}")
+            return overall_success
         except Exception as e:
             print(f"❌ Error storing metadata in Azure Table Storage: {e}")
-            # Don't fail the entire pipeline if table storage fails
             import traceback
             traceback.print_exc()
+            return False
     
     def _print_extraction_debug(self, all_text, text_chunks, tables, figures, table_chunks, image_chunks):
         """Print comprehensive debug information with LLM metadata - FULL CONTENT DISPLAY INCLUDING RFI/RFP DETECTION"""
