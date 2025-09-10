@@ -190,35 +190,35 @@ class ContentExtractor:
             all_text = "\n\n".join([f"[{elem.get('role', 'unknown')}] {elem['content']}" for elem in self.text_elements])
             
             #Save to storage and upload to Azure AI Search
-            if all_chunks:
-                if self.document_type == "RFI":
-                    print(f"💾 Saving enhanced RFI text chunks to storage...")
-                    chunk_data, json_path = self.storage.save_text_chunks_RFI(all_chunks, base_filename)
-                    if chunk_data:
-                        print(f"📊 RFI chunk data prepared for indexing:")
-                        print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
-                        print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
+            # if all_chunks:
+            #     if self.document_type == "RFI":
+            #         print(f"💾 Saving enhanced RFI text chunks to storage...")
+            #         chunk_data, json_path = self.storage.save_text_chunks_RFI(all_chunks, base_filename)
+            #         if chunk_data:
+            #             print(f"📊 RFI chunk data prepared for indexing:")
+            #             print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
+            #             print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
                         
-                        # Upload to Azure AI Search RFI index
-                        print(f"📤 Uploading RFI data to Azure AI Search RFI index...")
-                        self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
-                        print(f"✅ RFI data successfully uploaded to Azure AI Search RFI index")
-                    else:
-                        print("❌ Failed to prepare RFI chunk data for indexing")
-                else:
-                    print(f"💾 Saving RFP text chunks to storage...")
-                    chunk_data, json_path = self.storage.save_text_chunks(all_chunks, base_filename)
-                    if chunk_data:
-                        print(f"📊 RFP chunk data prepared for indexing:")
-                        print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
-                        print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
+            #             # Upload to Azure AI Search RFI index
+            #             print(f"📤 Uploading RFI data to Azure AI Search RFI index...")
+            #             self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
+            #             print(f"✅ RFI data successfully uploaded to Azure AI Search RFI index")
+            #         else:
+            #             print("❌ Failed to prepare RFI chunk data for indexing")
+            #     else:
+            #         print(f"💾 Saving RFP text chunks to storage...")
+            #         chunk_data, json_path = self.storage.save_text_chunks(all_chunks, base_filename)
+            #         if chunk_data:
+            #             print(f"📊 RFP chunk data prepared for indexing:")
+            #             print(f"   📝 Total chunks: {chunk_data.get('total_chunks', 0)}")
+            #             print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
                         
-                        # Upload to Azure AI Search RFP index
-                        print(f"📤 Uploading RFP data to Azure AI Search RFP index...")
-                        self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
-                        print(f"✅ RFP data successfully uploaded to Azure AI Search RFP index")
-                    else:
-                        print("❌ Failed to prepare RFP chunk data for indexing")
+            #             # Upload to Azure AI Search RFP index
+            #             print(f"📤 Uploading RFP data to Azure AI Search RFP index...")
+            #             self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
+            #             print(f"✅ RFP data successfully uploaded to Azure AI Search RFP index")
+            #         else:
+            #             print("❌ Failed to prepare RFP chunk data for indexing")
 
             # Save raw text content to storage
             if all_text.strip():
@@ -285,7 +285,10 @@ class ContentExtractor:
             # print(f"📋 Required Activities: {len(str(self.document_metadata.get('required_activities', '')))} characters")
             print(f"🏞️ Field Type: {self.document_metadata.get('field_type', 'N/A')}")
             print(f"🔌 Voltage Class: {self.document_metadata.get('voltage_class', 'N/A')}")
+            print(f"📃 Contract Types: {self.document_metadata.get('contract_types', 'N/A')}")
+            print(f"📃 Pricing: {self.document_metadata.get('pricing', 'N/A')}")
             print(f"🧩 Components: {self.document_metadata.get('components', 'N/A')}")
+        
         else:
             print(f"🤖 LLM-EXTRACTED RFP DOCUMENT METADATA (11 FIELDS)")
             print(f"{'='*80}")
