@@ -1,0 +1,134 @@
+[
+  {
+    "chunk_id": "f66d4b22",
+    "project_id": "proj_705-22295407_00-B&M_HONI_RFP-Chatham_SS-Chatham_Lakeshore_Instruct_for_Const_docx",
+    "file_name": "705-22295407.00-B&M_HONI RFP-Chatham SS-Chatham_Lakeshore Instruct for Const.docx",
+    "content_type": "document",
+    "created_at": "2025-09-11T17:33:02.104953",
+    "project_name": "",
+    "client": "Hydro One Networks Inc.",
+    "industry": "Power & Energy",
+    "region": "Ontario, Canada",
+    "prepared_date": "2021-10-06",
+    "field_type": "Brown Field",
+    "voltage_class": "Transmission (115–230 kV)",
+    "contract_types": "Not mentioned in the document",
+    "pricing": "Not mentioned in the document",
+    "components": {
+      "ELE": {
+        "scope_of_work": "The electrical scope involves expanding the 230kV yard at Chatham SS, installing new strain bus diameters, modifying existing diameters, and adding various electrical equipment including 3000A dead tank breakers, disconnect switches, CVTs, and relay buildings. It also includes upgrades to AC station services and grounding grids.",
+        "required_activities": "Install three 3000A dead tank breakers, six 230kV disconnect switches for breaker isolation, two 230kV line disconnect switches with grounding, and six CVTs. Extend the 230kV yard, install new trench networks, and upgrade AC station services with new transformers and panels. Provide lighting and grounding grid installations.",
+        "disconnect_switches": "230kV line disconnect switches with line grounding switches",
+        "transformer": "150kVA and 75kVA pad-mounted transformers"
+      },
+      "FND": {
+        "scope_of_work": "The foundation scope includes constructing foundations for 230kV SF6 breakers, disconnect switches, bus supports, CVT supports, and ACSS transformers. It also involves customized foundations for AC panels and road crossings with steel covers and guardrails.",
+        "required_activities": "Install foundations for three 230kV SF6 breakers, multiple bus supports, disconnect switches, and CVT supports. Construct precast vaults for ACSS transformers and customized foundations for AC panels. Ensure compliance with Hydro One standards for soil bearing capacity and shaft friction considerations.",
+        "transformer_foundations": "Precast vaults for ACSS transformers 533T13/533T14 and 533T15/533T16",
+        "equipment_support_foundations": "Foundations for 230kV SF6 breakers, disconnect switches, and bus supports"
+      },
+      "CNT": {
+        "scope_of_work": "The control scope involves designing and implementing control systems for new and existing equipment, including SCADA/RTU integration, LAN expansion, and relay rack installations. It ensures redundancy and compliance with Hydro One standards.",
+        "required_activities": "Expand the existing 230kV BES LAN, install dual node Axion RTUs, and integrate new IEDs with SCADA/RTU systems. Provide new AC/DC SLDs, phasing diagrams, and protection descriptions. Ensure compliance with Hydro One drafting standards and finalize operating designations.",
+        "control_design_packages": "Provide complete control design package as per latest BES standard",
+        "SCADA_infrastructure": "Install new SCADA infrastructure at control buildings"
+      },
+      "PRT": {
+        "scope_of_work": "The protection scope includes designing and installing protections for new 230kV lines and breakers, integrating with existing systems, and ensuring compliance with Hydro One standards. It involves relay rack installations and teleprotection channels.",
+        "required_activities": "Install A and B line protections for 3L24 and 3L26, modify existing bus protections, and integrate new protections with existing systems. Provide dual redundant teleprotection channels, CT/VT connections, and protection descriptions. Perform pre-commissioning and functional testing.",
+        "transformer_protection": "not mentioned in document",
+        "breaker_protection": "3x A & B HONI breaker protection IEDs for three diameter breakers 3CB24, 3CB26 & 3CB28"
+      },
+      "TEL": {
+        "scope_of_work": "The telecom scope involves designing and installing new OPGW fiber connections, inter-building fiber and copper cables, and BES LAN expansions. It includes securing the new relay building as a Physical Security Perimeter (PSP).",
+        "required_activities": "Install new 96F OPGW fiber cable, inter-building 24F MM cables, and 25PR copper cables. Relocate existing Bell cables and security fiber infrastructure. Configure BES LAN switches, clocks, and SCADA/RTU interfaces. Perform OTDR testing and commissioning.",
+        "station_lan_networks": "Design and install new BES station LAN for 230kV systems",
+        "scada_and_transport_infrastructure": "Configure local and remote routers to provide direct SCADA connectivity"
+      },
+      "STE": {
+        "scope_of_work": "The site preparation scope includes grading, road construction, and drainage for the expanded 230kV yard at Chatham SS. It involves removing organic material, laying geotextile, and compacting granular material.",
+        "required_activities": "Excavate 15,600 sq. meters of organic soil, lay geotextile material, and fill with compacted granular material. Construct 255m of gravel service roads, provide 10m turning radius, and install chain link fencing with grounding and animal deterrents.",
+        "grading_and_roads": "Provide grading for 15,600 sq. meters and construct 255m of gravel service roads",
+        "drainage_and_water_management": "not mentioned in document"
+      },
+      "STR": {
+        "scope_of_work": "The structural scope includes fabricating and installing steel structures for bus supports, disconnect switches, CVTs, and circuit breakers. It ensures compliance with Hydro One standards for design and galvanizing.",
+        "required_activities": "Fabricate and install nine towers WTE, six towers WTB, and multiple girders for bus supports. Provide steel assemblies for disconnect switches, CVTs, and AC panels. Perform shop assembly, galvanizing, and transportation to the site.",
+        "steel_and_station_structures": "Steel assemblies for disconnect switches, CVTs, and bus supports",
+        "transformer_and_equipment_structures": "not mentioned in document"
+      },
+      "LN": {
+        "scope_of_work": "The line scope involves relocating and rerouting 230kV transmission lines between Chatham SS and Lakeshore TS. It includes designing new tubular steel poles and ensuring compliance with Hydro One standards.",
+        "required_activities": "Relocate 2.08 miles of 230kV transmission line, design new tubular steel poles, and ensure compatibility with existing and future lines. Perform line crossings, parallel runs, and proximity adjustments for pipelines and roads.",
+        "line_relocations_and_bypasses": "Relocation of 230kV lines for new yard expansion",
+        "line_rerouting_and_extensions": "Reroute 230kV lines to new tubular steel poles"
+      }
+    },
+    "text_elements_count": 819,
+    "total_content_length": 77176,
+    "processing_timestamp": "2025-09-11T17:33:02.104953"
+  },
+  {
+    "chunk_id": "d9dd3989",
+    "project_id": "proj_705-22295407_00-B&M_HONI_RFP-Chatham_SS_docx",
+    "file_name": "705-22295407.00-B&M_HONI RFP-Chatham SS.docx",
+    "content_type": "document",
+    "created_at": "2025-09-11T17:32:37.666318",
+    "project_name": "",
+    "client": "Hydro One Networks Inc.",
+    "industry": "Power & Energy",
+    "region": "Ontario, Canada",
+    "prepared_date": "2021-10-06",
+    "field_type": "Brown Field",
+    "voltage_class": "Transmission (115–230 kV)",
+    "contract_types": "Not mentioned in the document",
+    "pricing": "Not mentioned in the document",
+    "components": {
+      "ELE": {
+        "scope_of_work": "The electrical scope includes expanding the 230kV yard at Chatham SS, installing new circuit breakers, disconnect switches, transformers, and a new relay building. At Lakeshore TS, it involves installing line disconnect switches, CVTs, and upgrading lighting and AC supply for HV areas.",
+        "required_activities": "Install three 3000A SF6 circuit breakers, six 230kV disconnect switches, two 2000A line disconnect switches with grounding, and six CVTs at Chatham SS. Install two 230kV line disconnect switches and six CVTs at Lakeshore TS. Provide AC supply and lighting upgrades for HV areas.",
+        "disconnect_switches": "230kV line disconnect switches with grounding switches",
+        "transformer": "150kVA, 600-208/120VAC pad-mounted transformers"
+      },
+      "FND": {
+        "scope_of_work": "Foundation work includes constructing foundations for 230kV SF6 breakers, disconnect switches, bus supports, CVT supports, and ACSS transformers at Chatham SS. No foundation activities are planned for Lakeshore TS.",
+        "required_activities": "Install foundations for three 230kV SF6 breakers, eight disconnect switches, six CVT supports, and two ACSS transformers. Ensure compliance with Hydro One standards and address soil bearing capacity limitations.",
+        "transformer_foundations": "Two precast vaults for ACSS transformers 533T13/533T14",
+        "equipment_support_foundations": "Foundations for 230kV SF6 breakers and disconnect switches"
+      },
+      "CNT": {
+        "scope_of_work": "Control scope involves expanding the 230kV BES LAN, installing new RTUs, LAN switches, and clocks in the new relay building. It includes interfacing new protections with existing systems and ensuring compliance with Hydro One standards.",
+        "required_activities": "Install dual-node Axion RTUs, LAN switches, and SEL-2488 clocks. Expand BES LAN to accommodate new IEDs. Interface new protections with SCADA/RTU and ensure compliance with Hydro One standards.",
+        "control_design_packages": "Provide complete control design package as per latest BES standard",
+        "SCADA_infrastructure": "Install new SCADA infrastructure at control buildings"
+      },
+      "TEL": {
+        "scope_of_work": "Telecom scope includes designing and installing new OPGW, inter-building fiber and copper cables, and securing the new relay building as a Physical Security Perimeter (PSP) to meet NERC CIP-006 standards.",
+        "required_activities": "Install 96F OPGW, inter-building fiber cables, and copper cables. Relocate Bell Canada cables and security fiber infrastructure. Configure security network and firewall changes for PSP compliance.",
+        "station_lan_networks": "Design and install new BES station LAN for 230kV systems",
+        "scada_and_transport_infrastructure": "Configure local and remote routers to provide direct SCADA connectivity"
+      },
+      "PRT": {
+        "scope_of_work": "Protection scope includes installing new A and B line protections, breaker protections, and teleprotection channels for 230kV lines and breakers at Chatham SS and Lakeshore TS.",
+        "required_activities": "Install A and B protections for lines 3L24 and 3L26, and breakers 3CB24, 3CB26, and 3CB28. Interface protections with existing systems and configure teleprotection channels.",
+        "transformer_protection": "Design and install protections for new 230/28kV transformers 3T1 and 3T2",
+        "breaker_protection": "230kV Circuit Switcher 3DS-MTU for outage staging"
+      },
+      "STE": {
+        "scope_of_work": "Site preparation includes grading, road construction, and installing a chain-link fence with grounding and animal deterrents at Chatham SS. No site preparation activities are planned for Lakeshore TS.",
+        "required_activities": "Excavate 15,600 sq. meters of organic soil, lay geotextile material, and fill with compacted granular material. Install 255m of service road, chain-link fence, and animal deterrents.",
+        "grading_and_roads": "Provide grading for 15,600 sq. meters and construct 255m of service road",
+        "drainage_and_water_management": "not mentioned in document"
+      },
+      "STR": {
+        "scope_of_work": "Structural scope includes fabricating and installing steel structures for bus supports, disconnect switches, CVTs, and AC panels at Chatham SS. No structural activities are planned for Lakeshore TS.",
+        "required_activities": "Fabricate and install steel structures for bus supports, disconnect switches, CVTs, and AC panels. Prepare and submit fabrication drawings for approval.",
+        "steel_and_station_structures": "Provide structural steel design for PowerCo TS station structures",
+        "transformer_and_equipment_structures": "Design structures for two 230kV transformers with spill containment area"
+      }
+    },
+    "text_elements_count": 776,
+    "total_content_length": 75098,
+    "processing_timestamp": "2025-09-11T17:32:37.666318"
+  }
+]
