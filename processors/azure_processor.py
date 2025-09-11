@@ -1,3 +1,7 @@
+
+
+
+import threading
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeOutputOption
 from azure.core.credentials import AzureKeyCredential
@@ -15,14 +19,22 @@ tracer = trace.get_tracer(__name__)
 class AzureDocumentProcessor:
     def __init__(self):
         with tracer.start_as_current_span("AzureDocumentProcessor_init_fn") as span:
-            self.client = DocumentIntelligenceClient(
+            # Use thread-local storage for thread safety in parallel processing
+            self._local = threading.local()
+    
+    @property
+    def client(self):
+        """Thread-safe client creation for parallel processing"""
+        if not hasattr(self._local, 'client'):
+            self._local.client = DocumentIntelligenceClient(
                 endpoint=AZURE_DOC_INTELLIGENCE_ENDPOINT,
                 credential=AzureKeyCredential(AZURE_DOC_INTELLIGENCE_KEY)
             )
+        return self._local.client
     
     def analyze_document(self, file_bytes: bytes, filename: str = None) -> tuple:
         with tracer.start_as_current_span("analyze_document_fn") as span:
-            """Analyze document using prebuilt-layout model with figures output"""
+            """Analyze document using prebuilt-layout model with figures output - Thread Safe"""
             
             # Determine content type based on file extension
             content_type = self._get_content_type(filename)
@@ -38,6 +50,7 @@ class AzureDocumentProcessor:
                     step="main step",
                 )
                 
+                # Use thread-safe client property
                 poller = self.client.begin_analyze_document(
                     "prebuilt-layout",
                     file_bytes,
@@ -47,7 +60,6 @@ class AzureDocumentProcessor:
                 
                 result = poller.result()
                 print(poller.details)  # Debug: Print poller details
-
 
                 print(f"📋 All poller attributes: {[attr for attr in dir(poller) if not attr.startswith('_')]}")
                 # Debug: Print result attributes to understand the structure
@@ -62,27 +74,10 @@ class AzureDocumentProcessor:
                 operation_id = poller.details["operation_id"]
                 print(f"Operation id : {operation_id}")
                 
-                # # Get operation details properly
-                # operation_id = None
-                # if hasattr(poller, '_polling_method') and hasattr(poller._polling_method, '_operation_location_header'):
-                #     operation_location = poller._polling_method._operation_location_header
-                #     if operation_location:
-                #         # Extract operation ID from the location URL
-                #         operation_id = operation_location.split('/')[-1].split('?')[0]
-                
-                # # Alternative method to get operation ID
-                # if not operation_id and hasattr(result, 'model_id'):
-                #     # For newer versions, the operation ID might be in different places
-                #     try:
-                #         operation_id = getattr(poller, 'operation_id', None)
-                #     except:
-                #         pass
-                
-                # print(f"📋 Operation ID: {operation_id}")
-                
                 # Log what was found for debugging
                 self._log_analysis_results(result)
                 
+                # Return thread-safe client instance
                 return result, self.client, operation_id
                 
             except Exception as e:

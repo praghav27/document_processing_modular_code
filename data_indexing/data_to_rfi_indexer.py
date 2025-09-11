@@ -184,49 +184,49 @@ class AzureSearchRFPRequestUploader:
 
 
 
-    def upload_documents_in_batches(self, documents: List[Dict[str, Any]], batch_size: int = 50):
-        """Upload documents to Azure Search in batches."""
+    def upload_documents_in_batches(self, documents: List[Dict[str, Any]], batch_size: int = 100):
+        """Upload documents to Azure Search in LARGER batches for better performance"""
         total_docs = len(documents)
         successful, failed = 0, 0
-
-        for i in range(0, total_docs, batch_size):
-            batch = documents[i:i+batch_size]
-            batch_num = (i // batch_size) + 1
-            print(f" Uploading batch {batch_num}/{(total_docs+batch_size-1)//batch_size}...")
-
+        # Optimize batch size for parallel processing
+        optimized_batch_size = min(batch_size, max(50, total_docs // 5)) if total_docs > 0 else batch_size
+        print(f"📤 Optimized batch upload: {total_docs} documents in batches of {optimized_batch_size}")
+        for i in range(0, total_docs, optimized_batch_size):
+            batch = documents[i:i+optimized_batch_size]
+            batch_num = (i // optimized_batch_size) + 1
+            total_batches = (total_docs + optimized_batch_size - 1) // optimized_batch_size
+            print(f"📤 Uploading batch {batch_num}/{total_batches} ({len(batch)} documents)...")
             try:
                 result = self.search_client.upload_documents(documents=batch)
                 batch_success = sum(1 for r in result if r.succeeded)
                 batch_fail = len(batch) - batch_success
-
-                for r in result:
-                    if not r.succeeded:
-                        print(f"Failed doc {r.key}: {r.error_message}")
-
                 successful += batch_success
                 failed += batch_fail
-                print(f" Batch {batch_num} done: {batch_success} ok, {batch_fail} failed")
+                print(f"✅ Batch {batch_num} completed: {batch_success} successful, {batch_fail} failed")
             except Exception as e:
-                print(f" Error uploading batch {batch_num}: {e}")
+                print(f"❌ Error uploading batch {batch_num}: {e}")
                 failed += len(batch)
-
-        print(f"\n Upload finished → {successful} succeeded, {failed} failed (total {total_docs})")
+        print(f"\n📊 Upload summary: {successful} successful, {failed} failed (total {total_docs})")
         return successful, failed
 
     def upload_chunks_from_dict(self, chunk_data: Dict[str, Any]):
+        """Enhanced batch upload with better performance"""
         chunks = chunk_data.get("chunks", [])
         if not chunks:
             print("❌ No chunks found in input data")
             return
-
-        print(f"📄 Found {len(chunks)} chunks → expanding by components...")
+        print(f"📄 Processing {len(chunks)} chunks for batch upload...")
         documents = []
+        # Process chunks in parallel batches
         for chunk in chunks:
-            documents.extend(self.expand_chunk_by_components(chunk))
-
-        print(f"📄 Expanded into {len(documents)} documents")
-        self.upload_documents_in_batches(documents)
-
+            expanded_docs = self.expand_chunk_by_components(chunk)
+            documents.extend(expanded_docs)
+        print(f"📊 Expanded {len(chunks)} chunks into {len(documents)} component documents")
+        # Upload with optimized batch processing
+        if documents:
+            self.upload_documents_in_batches(documents, batch_size=100)  # Larger batches
+        else:
+            print("❌ No valid documents to upload")
 
     def load_and_upload_chunks(self, json_file_path: str):
         try:

@@ -13,6 +13,34 @@ AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
+
+# config.py - ADD these configuration options
+
+# Existing configurations...
+
+# NEW: Parallel Processing Configuration
+PARALLEL_PROCESSING_CONFIG = {
+    # Azure Document Intelligence limits
+    'max_concurrent_documents': 8,  # Adjust based on your Azure subscription
+    'max_concurrent_llm_calls': 4,  # Adjust based on OpenAI rate limits
+    'max_concurrent_storage_ops': 8,  # Blob and Table storage operations
+    
+    # Batch processing settings
+    'azure_search_batch_size': 100,  # Larger batches for better performance
+    'component_processing_batch_size': 50,
+    
+    # Thread pool settings
+    'max_thread_workers': 10,  # For CPU-bound operations
+    
+    # Rate limiting settings
+    'openai_rate_limit_rpm': 60,  # Requests per minute
+    'azure_di_rate_limit_rps': 10,  # Requests per second
+}
+
+# Performance monitoring
+ENABLE_PERFORMANCE_MONITORING = True
+PERFORMANCE_LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR
+
 # Azure OpenAI Embedding for semantic search (for future use)
 AZURE_EMBEDDING_ENDPOINT = os.getenv("AZURE_EMBEDDING_ENDPOINT")
 AZURE_EMBEDDING_API_KEY = os.getenv("AZURE_EMBEDDING_API_KEY")

@@ -1,17 +1,16 @@
-
-
-
 import json
 import re
+import asyncio
+import threading
 from typing import Dict, List
 from .prompts import DocumentMetadataPrompts
 from processors.content_verbalizer import ContentVerbalizer
 
 class RFIExtractor:
-    """Extract RFI metadata (enhanced component-based format with component-specific fields) from documents using Azure OpenAI"""
-   
+    """Extract RFI metadata (enhanced component-based format with component-specific fields) from documents using Azure OpenAI, with rate limiting for parallel processing"""
+    _rate_limiter = None  # Class-level rate limiter
     def __init__(self):
-        """Initialize RFI extractor with existing Azure OpenAI client"""
+        """Initialize RFI extractor with existing Azure OpenAI client and rate limiting"""
         self.verbalizer = ContentVerbalizer()  # Reuse existing client
         self.new_rfi_fields = [
             'project_name', 'client', 'industry', 'region', 'prepared_date', 'field_type','voltage_class','contract_types','pricing', 'components'
@@ -65,7 +64,10 @@ class RFIExtractor:
             }
         }
       
-        print("✅ Enhanced RFI Extractor initialized - ENHANCED COMPONENT FORMAT WITH SPECIFIC FIELDS")
+        # ADD: Initialize rate limiter if not exists
+        if RFIExtractor._rate_limiter is None:
+            RFIExtractor._rate_limiter = asyncio.Semaphore(3)  # Max 3 concurrent LLM calls
+        print("✅ Enhanced RFI Extractor initialized - ENHANCED COMPONENT FORMAT WITH SPECIFIC FIELDS + Rate Limiting")
         print(f"   📊 Components: {len(self.valid_components)} component types")
         print(f"   🚫 Chunking: DISABLED for RFI documents")
         print(f"   📄 First 10 Pages: ENABLED - extracts all content from pages 1-10")
@@ -75,59 +77,57 @@ class RFIExtractor:
         """
         Extract ONLY RFI metadata (enhanced component format with specific fields) from complete document text elements + first 10 pages content
         NO CHUNKING - Only metadata extraction for indexing
+        Rate limited for parallel processing
         """
-        try:
-            print("🔍 Enhanced RFI metadata extraction (DI text + First 10 pages content) - ENHANCED COMPONENT FORMAT")
-           
-            # Step 1: Convert text elements to complete document text (existing)
-            complete_document_text = self._prepare_complete_document_text(text_elements)
-            print(f"📄 Document Intelligence extracted text: {len(complete_document_text)} characters")
-           
-            # Step 2: NEW - Extract first 10 pages comprehensive content
-            first_10_pages_content = ""
-            if azure_di_result:
-                first_10_pages_content = self._extract_first_10_pages_comprehensive_content(azure_di_result)
-                print(f"📄 First 10 pages comprehensive content: {len(first_10_pages_content)} characters")
-            else:
-                print("⚠️ No Azure DI result provided - skipping first 10 pages extraction")
-           
-            # Step 3: Combine both contents
-            if first_10_pages_content:
-                combined_content = f"""=== DOCUMENT INTELLIGENCE EXTRACTED TEXT ===
-{complete_document_text}
-
-=== FIRST 10 PAGES COMPREHENSIVE CONTENT ===
-{first_10_pages_content}"""
-                print(f"🔗 Combined content: {len(combined_content)} characters")
-            else:
-                combined_content = complete_document_text
-                print(f"📝 Using DI text only: {len(combined_content)} characters")
-           
-            if not combined_content.strip():
-                print("⚠️ No text found in document, using RFI defaults")
+        async with RFIExtractor._rate_limiter:
+            try:
+                print(f"🔍 Enhanced RFI metadata extraction (Rate limited - Thread: {threading.current_thread().name})")
+               
+                # Step 1: Convert text elements to complete document text (existing)
+                complete_document_text = self._prepare_complete_document_text(text_elements)
+                print(f"📄 Document Intelligence extracted text: {len(complete_document_text)} characters")
+               
+                # Step 2: NEW - Extract first 10 pages comprehensive content
+                first_10_pages_content = ""
+                if azure_di_result:
+                    first_10_pages_content = self._extract_first_10_pages_comprehensive_content(azure_di_result)
+                    print(f"📄 First 10 pages comprehensive content: {len(first_10_pages_content)} characters")
+                else:
+                    print("⚠️ No Azure DI result provided - skipping first 10 pages extraction")
+               
+                # Step 3: Combine both contents
+                if first_10_pages_content:
+                    combined_content = f"""=== DOCUMENT INTELLIGENCE EXTRACTED TEXT ===\n{complete_document_text}\n\n=== FIRST 10 PAGES COMPREHENSIVE CONTENT ===\n{first_10_pages_content}"""
+                    print(f"🔗 Combined content: {len(combined_content)} characters")
+                else:
+                    combined_content = complete_document_text
+                    print(f"📝 Using DI text only: {len(combined_content)} characters")
+               
+                if not combined_content.strip():
+                    print("⚠️ No text found in document, using RFI defaults")
+                    return self._get_rfi_default_metadata()
+               
+                print(f"📊 Content prepared for LLM analysis:")
+                print(f"   📄 Pages processed: {self._count_pages(text_elements)}")
+                print(f"   📝 Total content length: {len(combined_content)} characters")
+                print(f"   🎯 Ready for enhanced metadata extraction with specific component fields")
+               
+                # Step 4: Generate metadata using Azure OpenAI with combined content
+                if self.verbalizer.client:
+                    metadata = await self._extract_metadata_with_azure_openai(combined_content)
+                else:
+                    print("❌ Azure OpenAI client not available")
+                    return self._get_rfi_default_metadata()
+               
+                # Step 5: Validate and clean metadata for RFI (enhanced format)
+                validated_metadata = self._validate_rfi_metadata(metadata)
+               
+                print("✅ Enhanced RFI metadata extraction completed (DI + First 10 Pages) - ENHANCED COMPONENT FORMAT")
+                return validated_metadata
+               
+            except Exception as e:
+                print(f"❌ Error extracting enhanced RFI metadata: {e}")
                 return self._get_rfi_default_metadata()
-           
-            print(f"📊 Content prepared for LLM analysis:")
-            print(f"   📄 Pages processed: {self._count_pages(text_elements)}")
-            print(f"   📝 Total content length: {len(combined_content)} characters")
-            print(f"   🎯 Ready for enhanced metadata extraction with specific component fields")
-           
-            # Step 4: Generate metadata using Azure OpenAI with combined content
-            if self.verbalizer.client:
-                metadata = await self._extract_metadata_with_azure_openai(combined_content)
-            else:
-                print("❌ Azure OpenAI client not available")
-                return self._get_rfi_default_metadata()
-           
-            # Step 5: Validate and clean metadata for RFI (enhanced format)
-            validated_metadata = self._validate_rfi_metadata(metadata)
-           
-            print("✅ Enhanced RFI metadata extraction completed (DI + First 10 Pages) - ENHANCED COMPONENT FORMAT")
-            return validated_metadata
-           
-        except Exception as e:
-            print(f"❌ Error extracting enhanced RFI metadata: {e}")
-            return self._get_rfi_default_metadata()
 
     def _extract_first_10_pages_comprehensive_content(self, azure_di_result) -> str:
         """
