@@ -1,7 +1,3 @@
-
-
-
-#optimised code:
 import os
 import asyncio
 import time
@@ -28,9 +24,15 @@ class DocumentProcessorMain:
             self.file_handler = FileHandler()
             self.storage = get_storage_instance() 
             
-            # Configuration for parallel processing
-            self.max_concurrent_documents = 8  # Adjust based on Azure limits
-            self.max_concurrent_processing = 4  # For content extraction
+            # REDUCED Configuration for parallel processing to prevent rate limiting
+            self.max_concurrent_documents = 3  # REDUCED from 8 to 3
+            self.max_concurrent_processing = 2  # REDUCED from 4 to 2
+            self.max_concurrent_storage_ops = 3  # REDUCED from 8 to 3
+            
+            # ADD: Rate limiting delays
+            self.document_processing_delay = 2.0  # 2 seconds between document starts
+            self.retry_attempts = 3
+            self.retry_delay = 5.0  # 5 seconds between retries
     
     def process_document(self, uploaded_file, progress_callback=None) -> Dict[str, Any]:
         with tracer.start_as_current_span("process_document_fn") as span:
@@ -82,151 +84,201 @@ class DocumentProcessorMain:
 
     async def process_multiple_documents_rfi(self, uploaded_files: List) -> List[Dict[str, Any]]:
         """
-        OPTIMIZED: Process multiple RFI documents in parallel with Azure Table Storage integration
-        Maintains your exact flow but adds parallelism for better performance
-        
-        Flow: Multiple docs -> Parallel Azure DI -> Parallel blob storage -> 
-              Parallel (text+10pages to LLM) -> Parallel Azure Table Storage -> Parallel Azure AI Search
+        ENHANCED: Process multiple RFI documents with BETTER rate limiting and error handling
         """
         start_time = time.time()
         print(f"\n{'='*80}")
-        print(f"🚀 OPTIMIZED PARALLEL RFI PROCESSING FOR {len(uploaded_files)} DOCUMENTS")
+        print(f"🚀 ENHANCED PARALLEL RFI PROCESSING FOR {len(uploaded_files)} DOCUMENTS")
         print(f"🗃️ Azure Table Storage: ENABLED - Metadata and components will be stored")
+        print(f"🔧 Rate Limiting: ENABLED - {self.max_concurrent_documents} concurrent docs")
         print(f"{'='*80}")
         
-        # Phase 1: Parallel Azure Document Intelligence Processing
-        print(f"📄 Phase 1: Parallel Azure Document Intelligence processing...")
+        # Phase 1: Parallel Azure Document Intelligence Processing with BETTER rate limiting
+        print(f"📄 Phase 1: Parallel Azure Document Intelligence processing with rate limiting...")
         phase1_start = time.time()
         
-        # Create semaphore to limit concurrent Azure DI calls
+        # ENHANCED: Create semaphore with REDUCED concurrency
         di_semaphore = asyncio.Semaphore(self.max_concurrent_documents)
         
-        async def process_single_document_di(uploaded_file):
-            """Process single document through Azure DI in parallel"""
+        async def process_single_document_di_with_retry(uploaded_file, file_index):
+            """Process single document through Azure DI with retry logic and delays"""
+            
+            # ADD: Staggered start delay to prevent overwhelming Azure services
+            await asyncio.sleep(file_index * self.document_processing_delay)
+            
             async with di_semaphore:
-                try:
-                    filename = uploaded_file.name
-                    print(f"📄 Processing: {filename}")
-                    
-                    # Validate file
-                    if not self.file_handler.validate_file(filename):
+                for attempt in range(self.retry_attempts):
+                    try:
+                        filename = uploaded_file.name
+                        print(f"📄 Processing ({attempt + 1}/{self.retry_attempts}): {filename}")
+                        
+                        # Validate file
+                        if not self.file_handler.validate_file(filename):
+                            return {
+                                'filename': filename,
+                                'success': False,
+                                'error': f"Unsupported file format: {self.file_handler.get_file_extension(filename)}",
+                                'uploaded_file': uploaded_file
+                            }
+                        
+                        # Convert to bytes in thread pool to avoid blocking
+                        loop = asyncio.get_event_loop()
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            file_bytes = await loop.run_in_executor(
+                                executor, 
+                                self.file_handler.process_file, 
+                                uploaded_file
+                            )
+                        
+                        print(f"📄 Analyzing {filename} with Azure Document Intelligence...")
+                        
+                        # ENHANCED: Add timeout and retry for Azure DI
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            result, client, operation_id = await asyncio.wait_for(
+                                loop.run_in_executor(
+                                    executor,
+                                    self.azure_processor.analyze_document,
+                                    file_bytes,
+                                    filename
+                                ),
+                                timeout=120.0  # 2 minute timeout per document
+                            )
+                        
                         return {
                             'filename': filename,
-                            'success': False,
-                            'error': f"Unsupported file format: {self.file_handler.get_file_extension(filename)}",
-                            'uploaded_file': uploaded_file
+                            'uploaded_file': uploaded_file,
+                            'azure_result': result,
+                            'client': client,
+                            'operation_id': operation_id,
+                            'success': True
                         }
-                    
-                    # Convert to bytes in thread pool to avoid blocking
-                    loop = asyncio.get_event_loop()
-                    with ThreadPoolExecutor(max_workers=1) as executor:
-                        file_bytes = await loop.run_in_executor(
-                            executor, 
-                            self.file_handler.process_file, 
-                            uploaded_file
-                        )
-                    
-                    print(f"📄 Analyzing {filename} with Azure Document Intelligence...")
-                    
-                    # Analyze with Azure DI in thread pool
-                    with ThreadPoolExecutor(max_workers=1) as executor:
-                        result, client, operation_id = await loop.run_in_executor(
-                            executor,
-                            self.azure_processor.analyze_document,
-                            file_bytes,
-                            filename
-                        )
-                    
-                    return {
-                        'filename': filename,
-                        'uploaded_file': uploaded_file,
-                        'azure_result': result,
-                        'client': client,
-                        'operation_id': operation_id,
-                        'success': True
-                    }
-                    
-                except Exception as e:
-                    print(f"❌ Error processing {uploaded_file.name}: {str(e)}")
-                    return {
-                        'filename': uploaded_file.name,
-                        'uploaded_file': uploaded_file,
-                        'error': str(e),
-                        'success': False
-                    }
+                        
+                    except asyncio.TimeoutError:
+                        print(f"⏰ Timeout on attempt {attempt + 1} for {uploaded_file.name}")
+                        if attempt < self.retry_attempts - 1:
+                            await asyncio.sleep(self.retry_delay)
+                            continue
+                        else:
+                            return {
+                                'filename': uploaded_file.name,
+                                'uploaded_file': uploaded_file,
+                                'error': 'Timeout after multiple attempts',
+                                'success': False
+                            }
+                    except Exception as e:
+                        print(f"❌ Error on attempt {attempt + 1} for {uploaded_file.name}: {str(e)}")
+                        if attempt < self.retry_attempts - 1:
+                            await asyncio.sleep(self.retry_delay)
+                            continue
+                        else:
+                            return {
+                                'filename': uploaded_file.name,
+                                'uploaded_file': uploaded_file,
+                                'error': str(e),
+                                'success': False
+                            }
         
-        # Execute all Azure DI processing in parallel
-        di_tasks = [process_single_document_di(file) for file in uploaded_files]
+        # Execute all Azure DI processing in parallel with staggered starts
+        di_tasks = [
+            process_single_document_di_with_retry(file, index) 
+            for index, file in enumerate(uploaded_files)
+        ]
         di_results = await asyncio.gather(*di_tasks, return_exceptions=True)
         
         phase1_time = time.time() - phase1_start
         print(f"✅ Phase 1 completed in {phase1_time:.2f}s")
         
-        # Phase 2: Parallel Content Extraction (Your Enhanced Orchestrator Logic)
-        print(f"📝 Phase 2: Parallel content extraction with your enhanced orchestrator...")
+        # Phase 2: Parallel Content Extraction with BETTER rate limiting
+        print(f"📝 Phase 2: Parallel content extraction with enhanced rate limiting...")
         phase2_start = time.time()
         
-        # Create semaphore for content extraction
+        # ENHANCED: Create semaphore with REDUCED concurrency for content extraction
         extraction_semaphore = asyncio.Semaphore(self.max_concurrent_processing)
         
-        async def extract_content_parallel(di_result):
-            """Extract content using your existing enhanced orchestrator in parallel"""
+        async def extract_content_parallel_with_retry(di_result, extract_index):
+            """Extract content with retry logic and delays"""
             if not di_result.get('success'):
                 return di_result
                 
+            # ADD: Staggered start delay for content extraction
+            await asyncio.sleep(extract_index * 1.0)  # 1 second delay between extractions
+                
             async with extraction_semaphore:
-                try:
-                    filename = di_result['filename']
-                    result = di_result['azure_result']
-                    client = di_result['client']
-                    operation_id = di_result['operation_id']
-                    
-                    print(f"📝 Extracting content from {filename}...")
-                    print(f"💾 Storing metadata in Azure Table Storage for {filename}...")
-                    
-                    # Use your existing enhanced content extractor - NO CHANGES to your logic!
-                    extracted_content = await self.content_extractor.extract_all_content(
-                        result,
-                        filename,
-                        client=client,
-                        operation_id=operation_id
-                    )
-                    
-                    print(f"✅ Successfully processed {filename}")
-                    
-                    # Check if table storage was successful
-                    table_storage_enabled = extracted_content.get('enhancement_info', {}).get('table_storage_enabled', False)
-                    
-                    # Return structured result following your exact format
-                    di_result.update({
-                        'extracted_content': extracted_content,
-                        'chunks': extracted_content.get('text_chunks', []),
-                        'metadata': extracted_content.get('document_metadata', {}),
-                        'document_type': extracted_content.get('document_type', 'RFI'),
-                        'project_id': extracted_content.get('project_id', 'unknown'),
-                        'stats': extracted_content.get('stats', {}),
-                        'enhancement_info': extracted_content.get('enhancement_info', {}),
-                        'table_storage': {
-                            'stored': table_storage_enabled,
-                            'file_metadata': table_storage_enabled,
-                            'component_data': table_storage_enabled and extracted_content.get('document_type') == 'RFI'
-                        }
-                    })
-                    
-                    return di_result
-                    
-                except Exception as e:
-                    print(f"❌ Error extracting content from {di_result['filename']}: {str(e)}")
-                    di_result.update({
-                        'error': str(e),
-                        'success': False,
-                        'table_storage': {'stored': False, 'error': str(e)}
-                    })
-                    return di_result
+                for attempt in range(self.retry_attempts):
+                    try:
+                        filename = di_result['filename']
+                        result = di_result['azure_result']
+                        client = di_result['client']
+                        operation_id = di_result['operation_id']
+                        
+                        print(f"📝 Extracting content from {filename} (attempt {attempt + 1})...")
+                        print(f"💾 Storing metadata in Azure Table Storage for {filename}...")
+                        
+                        # ENHANCED: Add timeout for content extraction
+                        extracted_content = await asyncio.wait_for(
+                            self.content_extractor.extract_all_content(
+                                result,
+                                filename,
+                                client=client,
+                                operation_id=operation_id
+                            ),
+                            timeout=180.0  # 3 minute timeout per extraction
+                        )
+                        
+                        print(f"✅ Successfully processed {filename}")
+                        
+                        # Check if table storage was successful
+                        table_storage_enabled = extracted_content.get('enhancement_info', {}).get('table_storage_enabled', False)
+                        
+                        # Return structured result following your exact format
+                        di_result.update({
+                            'extracted_content': extracted_content,
+                            'chunks': extracted_content.get('text_chunks', []),
+                            'metadata': extracted_content.get('document_metadata', {}),
+                            'document_type': extracted_content.get('document_type', 'RFI'),
+                            'project_id': extracted_content.get('project_id', 'unknown'),
+                            'stats': extracted_content.get('stats', {}),
+                            'enhancement_info': extracted_content.get('enhancement_info', {}),
+                            'table_storage': {
+                                'stored': table_storage_enabled,
+                                'file_metadata': table_storage_enabled,
+                                'component_data': table_storage_enabled and extracted_content.get('document_type') == 'RFI'
+                            }
+                        })
+                        
+                        return di_result
+                        
+                    except asyncio.TimeoutError:
+                        print(f"⏰ Content extraction timeout on attempt {attempt + 1} for {di_result['filename']}")
+                        if attempt < self.retry_attempts - 1:
+                            await asyncio.sleep(self.retry_delay)
+                            continue
+                        else:
+                            di_result.update({
+                                'error': 'Content extraction timeout after multiple attempts',
+                                'success': False,
+                                'table_storage': {'stored': False, 'error': 'Timeout'}
+                            })
+                            return di_result
+                    except Exception as e:
+                        print(f"❌ Error extracting content from {di_result['filename']} on attempt {attempt + 1}: {str(e)}")
+                        if attempt < self.retry_attempts - 1:
+                            await asyncio.sleep(self.retry_delay)
+                            continue
+                        else:
+                            di_result.update({
+                                'error': str(e),
+                                'success': False,
+                                'table_storage': {'stored': False, 'error': str(e)}
+                            })
+                            return di_result
         
-        # Execute all content extraction in parallel
+        # Execute all content extraction in parallel with staggered starts
         successful_di_results = [r for r in di_results if isinstance(r, dict) and r.get('success')]
-        extraction_tasks = [extract_content_parallel(result) for result in successful_di_results]
+        extraction_tasks = [
+            extract_content_parallel_with_retry(result, index) 
+            for index, result in enumerate(successful_di_results)
+        ]
         processed_results = await asyncio.gather(*extraction_tasks, return_exceptions=True)
         
         phase2_time = time.time() - phase2_start
@@ -284,10 +336,10 @@ class DocumentProcessorMain:
         total_time = time.time() - start_time
         
         print(f"\n{'='*80}")
-        print(f"📊 OPTIMIZED PARALLEL RFI PROCESSING + AZURE TABLE STORAGE SUMMARY")
+        print(f"📊 ENHANCED PARALLEL RFI PROCESSING + AZURE TABLE STORAGE SUMMARY")
         print(f"{'='*80}")
-        print(f"⏱️ Phase 1 (Parallel Azure DI): {phase1_time:.2f}s")
-        print(f"⏱️ Phase 2 (Parallel Content Extraction): {phase2_time:.2f}s")
+        print(f"⏱️ Phase 1 (Parallel Azure DI with Rate Limiting): {phase1_time:.2f}s")
+        print(f"⏱️ Phase 2 (Parallel Content Extraction with Rate Limiting): {phase2_time:.2f}s")
         print(f"⏱️ Total Processing Time: {total_time:.2f}s")
         print(f"✅ Successfully processed: {successful_count}/{len(uploaded_files)} documents")
         print(f"❌ Failed to process: {failed_count} documents")
@@ -295,6 +347,7 @@ class DocumentProcessorMain:
         print(f"🗃️ Azure Table Storage:")
         print(f"   ✅ Successful metadata storage: {table_storage_stats['successful']} documents")
         print(f"   ❌ Failed metadata storage: {table_storage_stats['failed']} documents")
+        print(f"🔧 Rate Limiting: Applied - Max {self.max_concurrent_documents} concurrent documents")
         
         # Print all chunks to terminal (your exact logic)
         if successful_chunks:
@@ -474,6 +527,3 @@ class DocumentProcessorMain:
 
 # Global instance for use in Streamlit
 document_processor = DocumentProcessorMain()
-
-
-

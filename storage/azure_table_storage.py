@@ -22,6 +22,11 @@ class AzureTableMetadataHandler:
         
         # Cache for RFP GUIDs to associate RFIs
         self._rfp_guid_cache = {}
+        
+        # Retry settings
+        self.max_retries = 3
+        self.retry_delay = 1.0  # seconds
+        self.max_retry_delay = 8.0  # seconds
     
     def _create_table_if_not_exists(self, table_name: str):
         """Create table if it doesn't exist"""
@@ -265,15 +270,27 @@ class AzureTableMetadataHandler:
                 entity['SystemCreatedAt'] = datetime.utcnow().isoformat()
                 entity['SystemUpdatedAt'] = datetime.utcnow().isoformat()
                 
-                # Store to Azure
-                table_client.create_entity(entity=entity)
-                entity_key = f"{entity['PartitionKey']}_{entity['RowKey']}"
-                entity_keys.append(entity_key)
-                
-                print(f"✅ Successfully stored component {component_name} for project {common_fields['project_name']}")
-                print(f"   Entity Key: {entity_key}")
-                print(f"   Component Chunk ID: {component_chunk_id}")
-                print(f"   Record GUID: {entity['RecordGUID']}")
+                # Store to Azure with retry logic
+                for attempt in range(self.max_retries):
+                    try:
+                        table_client.create_entity(entity=entity)
+                        entity_key = f"{entity['PartitionKey']}_{entity['RowKey']}"
+                        entity_keys.append(entity_key)
+                        print(f"✅ Successfully stored component {component_name} for project {common_fields['project_name']}")
+                        print(f"   Entity Key: {entity_key}")
+                        print(f"   Component Chunk ID: {component_chunk_id}")
+                        print(f"   Record GUID: {entity['RecordGUID']}")
+                        break  # Success, exit retry loop
+                    except Exception as e:
+                        if attempt < self.max_retries - 1:
+                            retry_delay = min(self.retry_delay * (2 ** attempt), self.max_retry_delay)
+                            print(f"⚠️ Failed to store component {component_name} (attempt {attempt + 1}), retrying in {retry_delay}s...")
+                            import time
+                            time.sleep(retry_delay)
+                            continue
+                        else:
+                            print(f"❌ Failed to store component {component_name} after {self.max_retries} attempts: {str(e)}")
+                            # Continue with next component instead of failing completely
             
             return entity_keys
             

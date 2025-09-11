@@ -19,22 +19,35 @@ AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 # Existing configurations...
 
 # NEW: Parallel Processing Configuration
+# NEW: ENHANCED Parallel Processing Configuration for Better Stability
 PARALLEL_PROCESSING_CONFIG = {
-    # Azure Document Intelligence limits
-    'max_concurrent_documents': 8,  # Adjust based on your Azure subscription
-    'max_concurrent_llm_calls': 4,  # Adjust based on OpenAI rate limits
-    'max_concurrent_storage_ops': 8,  # Blob and Table storage operations
+    # REDUCED Azure Document Intelligence limits for stability
+    'max_concurrent_documents': 3,  # REDUCED from 8 to 3
+    'max_concurrent_llm_calls': 2,  # REDUCED from 4 to 2
+    'max_concurrent_storage_ops': 3,  # REDUCED from 8 to 3
     
-    # Batch processing settings
-    'azure_search_batch_size': 100,  # Larger batches for better performance
-    'component_processing_batch_size': 50,
+    # ENHANCED Batch processing settings
+    'azure_search_batch_size': 50,  # REDUCED from 100 to 50
+    'component_processing_batch_size': 25,  # REDUCED from 50 to 25
     
-    # Thread pool settings
-    'max_thread_workers': 10,  # For CPU-bound operations
+    # ENHANCED Thread pool settings
+    'max_thread_workers': 5,  # REDUCED from 10 to 5
     
-    # Rate limiting settings
-    'openai_rate_limit_rpm': 60,  # Requests per minute
-    'azure_di_rate_limit_rps': 10,  # Requests per second
+    # ENHANCED Rate limiting settings
+    'openai_rate_limit_rpm': 30,  # REDUCED from 60 to 30 requests per minute
+    'azure_di_rate_limit_rps': 5,  # REDUCED from 10 to 5 requests per second
+    'min_request_interval': 2.0,  # NEW: Minimum 2 seconds between requests
+    
+    # NEW: Retry and timeout settings
+    'max_retries': 3,
+    'retry_delay': 5.0,  # 5 seconds between retries
+    'request_timeout': 120.0,  # 2 minute timeout per request
+    'total_processing_timeout': 1800.0,  # 30 minute total timeout
+    
+    # NEW: Connection pooling settings
+    'connection_pool_size': 5,
+    'connection_pool_maxsize': 10,
+    'keep_alive_timeout': 30.0,
 }
 
 # Performance monitoring

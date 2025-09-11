@@ -1,8 +1,11 @@
 
 
+
+
 import os
 import base64
 import asyncio
+import time
 from typing import Dict, Optional
 from .prompts import ImageAnalysisPrompts, TableAnalysisPrompts
 from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME
@@ -11,12 +14,13 @@ from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API
 from openai import AsyncAzureOpenAI
  
 class ContentVerbalizer:
-    """Handle verbalization of tables and images using Azure OpenAI - SINGLETON PATTERN with ASYNC support and Rate Limiting"""
+    """Handle verbalization of tables and images using Azure OpenAI - SINGLETON PATTERN with ASYNC support and Enhanced Rate Limiting"""
    
     _instance = None
     _client = None
     _initialized = False
     _rate_limiter = None  # Rate limiter for parallel processing
+    _request_tracker = None  # Request tracking for better rate limiting
    
     def __new__(cls):
         if cls._instance is None:
@@ -27,8 +31,14 @@ class ContentVerbalizer:
         """Initialize the verbalizer with Azure OpenAI - ONLY ONCE, SILENTLY REUSE"""
         if not ContentVerbalizer._initialized:
             self._initialize_azure_openai_client()
-            # Add rate limiter for parallel processing
-            ContentVerbalizer._rate_limiter = asyncio.Semaphore(4)  # Max 3 concurrent OpenAI calls
+            # ENHANCED: Reduced rate limiter for better stability
+            ContentVerbalizer._rate_limiter = asyncio.Semaphore(2)  # REDUCED from 4 to 2 concurrent OpenAI calls
+            ContentVerbalizer._request_tracker = {
+                'last_request_time': 0,
+                'min_interval': 1.0,  # Minimum 1 second between requests
+                'request_count': 0,
+                'error_count': 0
+            }
             ContentVerbalizer._initialized = True
         # NO print statements for subsequent initializations - silent reuse
    
@@ -44,12 +54,16 @@ class ContentVerbalizer:
                 ContentVerbalizer._client = AsyncAzureOpenAI(
                     api_key=AZURE_OPENAI_API_KEY,
                     api_version=AZURE_OPENAI_API_VERSION,
-                    azure_endpoint=AZURE_OPENAI_ENDPOINT
+                    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+                    timeout=60.0,  # ADD: 60 second timeout
+                    max_retries=3   # ADD: 3 retries
                 )
-                print("✅ Async Azure OpenAI client initialized with rate limiting")
+                print("✅ Enhanced Async Azure OpenAI client initialized with improved rate limiting")
                 print(f"   Endpoint: {AZURE_OPENAI_ENDPOINT}")
                 print(f"   Deployment: {AZURE_OPENAI_DEPLOYMENT_NAME}")
-                print(f"   Rate limit: 3 concurrent calls")
+                print(f"   Rate limit: 2 concurrent calls (enhanced)")
+                print(f"   Timeout: 60 seconds")
+                print(f"   Max retries: 3")
             else:
                 print("❌ Azure OpenAI credentials not found")
                 print("⚠️  Using mock responses for testing")
@@ -57,10 +71,23 @@ class ContentVerbalizer:
         except Exception as e:
             print(f"❌ Error initializing Azure OpenAI client: {e}")
             ContentVerbalizer._client = None
+    
+    async def _wait_for_rate_limit(self):
+        """Enhanced rate limiting to prevent overwhelming OpenAI"""
+        current_time = time.time()
+        time_since_last = current_time - ContentVerbalizer._request_tracker['last_request_time']
+        
+        if time_since_last < ContentVerbalizer._request_tracker['min_interval']:
+            sleep_time = ContentVerbalizer._request_tracker['min_interval'] - time_since_last
+            print(f"⏳ OpenAI Rate limiting: Waiting {sleep_time:.2f}s")
+            await asyncio.sleep(sleep_time)
+        
+        ContentVerbalizer._request_tracker['last_request_time'] = time.time()
+        ContentVerbalizer._request_tracker['request_count'] += 1
    
     async def verbalize_table(self, table_data: Dict) -> str:
         """
-        Generate natural language description of table data (ASYNC with Rate Limiting)
+        Generate natural language description of table data (ASYNC with Enhanced Rate Limiting)
        
         Args:
             table_data: Dictionary containing table information
@@ -68,37 +95,59 @@ class ContentVerbalizer:
         Returns:
             str: Natural language description of the table
         """
-        # Apply rate limiting for parallel processing
+        # Apply enhanced rate limiting for parallel processing
         async with ContentVerbalizer._rate_limiter:
-            try:
-                # Prepare table metadata
-                metadata = f"""
-                Page: {table_data.get('page_number', 'Unknown')}
-                Rows: {table_data.get('row_count', 'Unknown')}
-                Columns: {table_data.get('column_count', 'Unknown')}
-                Section: {table_data.get('section_info', {}).get('section_content', 'Unknown')[:100]}
-                """
-               
-                # Get table content (CSV format)
-                table_content = table_data.get('content', 'No table content available')
-               
-                # Get the prompt
-                prompt = TableAnalysisPrompts.get_rfp_table_analysis_prompt(metadata, table_content)
-               
-                # Generate verbalization (ASYNC)
-                if self.client:
-                    return await self._verbalize_with_azure_openai(prompt, content_type="table")
-                else:
-                    # Mock response for testing
-                    return self._generate_mock_table_verbalization(table_data)
+            # Wait for rate limit
+            await self._wait_for_rate_limit()
+            
+            for attempt in range(3):  # 3 retry attempts
+                try:
+                    # Prepare table metadata
+                    metadata = f"""
+                    Page: {table_data.get('page_number', 'Unknown')}
+                    Rows: {table_data.get('row_count', 'Unknown')}
+                    Columns: {table_data.get('column_count', 'Unknown')}
+                    Section: {table_data.get('section_info', {}).get('section_content', 'Unknown')[:100]}
+                    """
                    
-            except Exception as e:
-                print(f"❌ Error verbalizing table: {e}")
-                return f"Table from page {table_data.get('page_number', 'unknown')} with {table_data.get('row_count', 'unknown')} rows and {table_data.get('column_count', 'unknown')} columns."
+                    # Get table content (CSV format)
+                    table_content = table_data.get('content', 'No table content available')
+                   
+                    # Get the prompt
+                    prompt = TableAnalysisPrompts.get_rfp_table_analysis_prompt(metadata, table_content)
+                   
+                    # Generate verbalization (ASYNC with timeout)
+                    if self.client:
+                        result = await asyncio.wait_for(
+                            self._verbalize_with_azure_openai(prompt, content_type="table"),
+                            timeout=45.0  # 45 second timeout per request
+                        )
+                        return result
+                    else:
+                        # Mock response for testing
+                        return self._generate_mock_table_verbalization(table_data)
+                    
+                except asyncio.TimeoutError:
+                    print(f"⏰ Table verbalization timeout on attempt {attempt + 1}")
+                    ContentVerbalizer._request_tracker['error_count'] += 1
+                    if attempt < 2:  # Retry
+                        await asyncio.sleep(2.0)  # Wait 2 seconds before retry
+                        continue
+                    else:
+                        return self._generate_mock_table_verbalization(table_data)
+                        
+                except Exception as e:
+                    print(f"❌ Error verbalizing table on attempt {attempt + 1}: {e}")
+                    ContentVerbalizer._request_tracker['error_count'] += 1
+                    if attempt < 2:  # Retry
+                        await asyncio.sleep(2.0)  # Wait 2 seconds before retry
+                        continue
+                    else:
+                        return f"Table from page {table_data.get('page_number', 'unknown')} with {table_data.get('row_count', 'unknown')} rows and {table_data.get('column_count', 'unknown')} columns."
    
     async def verbalize_image(self, image_data: Dict) -> str:
         """
-        Generate natural language description of image data (ASYNC with Rate Limiting)
+        Generate natural language description of image data (ASYNC with Enhanced Rate Limiting)
        
         Args:
             image_data: Dictionary containing image information
@@ -106,28 +155,50 @@ class ContentVerbalizer:
         Returns:
             str: Natural language description of the image
         """
-        # Apply rate limiting for parallel processing
+        # Apply enhanced rate limiting for parallel processing
         async with ContentVerbalizer._rate_limiter:
-            try:
-                # Get the prompt
-                prompt = ImageAnalysisPrompts.get_rfp_image_analysis_prompt()
-               
-                # For images, we need to handle base64 data if available
-                image_base64 = image_data.get('image_base64')
-                image_path = image_data.get('image_path')
-               
-                if self.client and image_base64:
-                    return await self._verbalize_image_with_azure_openai(prompt, image_base64)
-                else:
-                    # Mock response for testing or fallback to text content
-                    return self._generate_mock_image_verbalization(image_data)
+            # Wait for rate limit
+            await self._wait_for_rate_limit()
+            
+            for attempt in range(3):  # 3 retry attempts
+                try:
+                    # Get the prompt
+                    prompt = ImageAnalysisPrompts.get_rfp_image_analysis_prompt()
                    
-            except Exception as e:
-                print(f"❌ Error verbalizing image: {e}")
-                return f"Figure from page {image_data.get('page_number', 'unknown')} - {image_data.get('content', 'No description available')}"
+                    # For images, we need to handle base64 data if available
+                    image_base64 = image_data.get('image_base64')
+                    image_path = image_data.get('image_path')
+                   
+                    if self.client and image_base64:
+                        result = await asyncio.wait_for(
+                            self._verbalize_image_with_azure_openai(prompt, image_base64),
+                            timeout=45.0  # 45 second timeout per request
+                        )
+                        return result
+                    else:
+                        # Mock response for testing or fallback to text content
+                        return self._generate_mock_image_verbalization(image_data)
+                        
+                except asyncio.TimeoutError:
+                    print(f"⏰ Image verbalization timeout on attempt {attempt + 1}")
+                    ContentVerbalizer._request_tracker['error_count'] += 1
+                    if attempt < 2:  # Retry
+                        await asyncio.sleep(2.0)  # Wait 2 seconds before retry
+                        continue
+                    else:
+                        return self._generate_mock_image_verbalization(image_data)
+                        
+                except Exception as e:
+                    print(f"❌ Error verbalizing image on attempt {attempt + 1}: {e}")
+                    ContentVerbalizer._request_tracker['error_count'] += 1
+                    if attempt < 2:  # Retry
+                        await asyncio.sleep(2.0)  # Wait 2 seconds before retry
+                        continue
+                    else:
+                        return f"Figure from page {image_data.get('page_number', 'unknown')} - {image_data.get('content', 'No description available')}"
    
     async def _verbalize_with_azure_openai(self, prompt: str, content_type: str) -> str:
-        """Generate verbalization using Azure OpenAI API (ASYNC)"""
+        """Generate verbalization using Azure OpenAI API (ASYNC with retry logic)"""
         try:
             response = await self.client.chat.completions.create(
                 model=AZURE_OPENAI_DEPLOYMENT_NAME,  # Use the deployment name
@@ -136,15 +207,16 @@ class ContentVerbalizer:
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=600,
-                temperature=0.3
+                temperature=0.3,
+                timeout=45.0  # Request-level timeout
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"❌ Azure OpenAI API error: {e}")
-            return f"Error generating {content_type} description with Azure OpenAI"
+            print(f"❌ Azure OpenAI API error for {content_type}: {e}")
+            raise e  # Re-raise to trigger retry logic
    
     async def _verbalize_image_with_azure_openai(self, prompt: str, image_base64: str) -> str:
-        """Generate image verbalization using Azure OpenAI Vision API (ASYNC)"""
+        """Generate image verbalization using Azure OpenAI Vision API (ASYNC with retry logic)"""
         try:
             response = await self.client.chat.completions.create(
                 model=AZURE_OPENAI_DEPLOYMENT_NAME,  # Use the deployment name
@@ -163,12 +235,13 @@ class ContentVerbalizer:
                     }
                 ],
                 max_tokens=600,
-                temperature=0.3
+                temperature=0.3,
+                timeout=45.0  # Request-level timeout
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"❌ Azure OpenAI Vision API error: {e}")
-            return "Error generating image description with Azure OpenAI Vision"
+            raise e  # Re-raise to trigger retry logic
    
     def _generate_mock_table_verbalization(self, table_data: Dict) -> str:
         """Generate mock table verbalization for testing"""
@@ -190,19 +263,22 @@ class ContentVerbalizer:
         return mock_description
    
     def get_model_info(self) -> Dict:
-        """Get information about the current Azure OpenAI model configuration"""
+        """Get information about the current Azure OpenAI model configuration with enhanced stats"""
         return {
-            "model_type": "async_azure_openai_with_rate_limiting",
+            "model_type": "enhanced_async_azure_openai_with_rate_limiting",
             "client_initialized": self.client is not None,
             "api_key_present": bool(AZURE_OPENAI_API_KEY),
             "endpoint": AZURE_OPENAI_ENDPOINT,
             "deployment": AZURE_OPENAI_DEPLOYMENT_NAME,
-            "rate_limit": "3 concurrent calls",
+            "rate_limit": "2 concurrent calls (enhanced)",
+            "timeout": "45 seconds per request",
+            "max_retries": "3 attempts per request",
+            "request_stats": ContentVerbalizer._request_tracker,
             "status": "ready" if self.client else "mock_mode"
         }
    
     async def test_verbalization(self) -> Dict:
-        """Test the verbalization functionality (ASYNC)"""
+        """Test the verbalization functionality (ASYNC with enhanced monitoring)"""
         test_table = {
             "page_number": 1,
             "row_count": 3,
@@ -217,14 +293,17 @@ class ContentVerbalizer:
             "section_info": {"section_content": "Technical Architecture"}
         }
        
-        # Run both verbalizations concurrently
+        # Run both verbalizations concurrently with enhanced tracking
+        start_time = time.time()
         table_verbalization, image_verbalization = await asyncio.gather(
             self.verbalize_table(test_table),
             self.verbalize_image(test_image)
         )
+        end_time = time.time()
        
         return {
             "table_verbalization": table_verbalization,
             "image_verbalization": image_verbalization,
+            "test_duration": f"{end_time - start_time:.2f}s",
             "model_info": self.get_model_info()
         }
