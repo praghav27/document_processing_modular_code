@@ -1,0 +1,62 @@
+[
+  {
+    "chunk_id": "1e0c7b24",
+    "project_id": "proj_sample_2_pdf",
+    "file_name": "sample_2.pdf",
+    "content_type": "document",
+    "created_at": "2025-09-15T16:50:01.224920",
+    "project_name": "",
+    "client": "newfoundland labrador hydro",
+    "industry": "Power & Energy",
+    "region": "Newfoundland & Labrador",
+    "prepared_date": "2022-12-19",
+    "field_type": "Brown Field",
+    "voltage_class": "Distribution (120 V - 34.5 kV)",
+    "contract_types": "Not mentioned in the document",
+    "pricing": "Not mentioned in the document",
+    "components": {
+      "ELE": {
+        "scope_of_work": "This document outlines the technical specifications for 120V outdoor lighting systems in terminal stations, including installation of LED luminaires, lighting circuits, and photoelectric controllers. It also specifies requirements for illumination levels, uniformity, and wiring standards.",
+        "required_activities": "Install outdoor lighting systems controlled by photoelectric controllers for dusk-to-dawn operation. Mount LED luminaires on existing steel structures and terminal station buildings. Ensure proper illumination for high bay switching devices. Wire lighting circuits using shielded control cables routed in trenches or conduits.",
+        "disconnect_switches": "not mentioned in document",
+        "transformer": "not mentioned in document"
+      }
+    },
+    "text_elements_count": 77,
+    "total_content_length": 10497,
+    "processing_timestamp": "2025-09-15T16:50:01.224968"
+  },
+  {
+    "chunk_id": "4d66bfbd",
+    "project_id": "proj_sample_3_pdf",
+    "file_name": "sample_3.pdf",
+    "content_type": "document",
+    "created_at": "2025-09-15T16:50:01.321379",
+    "project_name": "",
+    "client": "Newfoundland and Labrador Hydro",
+    "industry": "Power & Energy",
+    "region": "Newfoundland and Labrador, Canada",
+    "prepared_date": "2021-12-17",
+    "field_type": "Not mentioned in the document",
+    "voltage_class": "Not mentioned in the document",
+    "contract_types": "Not mentioned in the document",
+    "pricing": "Not mentioned in the document",
+    "components": {
+      "ELE": {
+        "scope_of_work": "The document outlines requirements for electrical systems, including battery banks, racks, and associated equipment. It specifies the need for discharge curves, cell sizing worksheets, and compliance with IEEE standards for design and installation of large storage batteries.",
+        "required_activities": "The vendor must provide discharge curves and tables for various ratings, supply completed cell sizing worksheets, and ensure compliance with IEEE standards. Installation instructions, operation manuals, and site-specific documentation must be delivered prior to shipping.",
+        "disconnect_switches": "not mentioned in document",
+        "transformer": "not mentioned in document"
+      },
+      "AUX": {
+        "scope_of_work": "The document specifies auxiliary requirements such as packaging and shipping of battery systems, including shock-resistant materials and proper orientation of cells during transport. It also mentions the need for forklift and operator for off-loading.",
+        "required_activities": "The vendor must package battery systems with shock-resistant materials, ensure proper orientation of cells, and provide forklifts and operators for off-loading. Pallets must be labeled with destination shipping information, and all shipments must comply with specified guidelines.",
+        "HVAC_and_FAS": "not mentioned in document",
+        "HADs_arrangements": "not mentioned in document"
+      }
+    },
+    "text_elements_count": 54,
+    "total_content_length": 6525,
+    "processing_timestamp": "2025-09-15T16:50:01.321420"
+  }
+]
