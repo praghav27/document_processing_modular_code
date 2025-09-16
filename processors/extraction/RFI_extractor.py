@@ -22,6 +22,12 @@
         
 #         chunks = []
 #         chunk = self._create_chunk_for_RFI(document_metadata, project_id)
+#         # Add deliverables_list, location, state, country to chunk if present in metadata
+#         if document_metadata:
+#             chunk["deliverables_list"] = document_metadata.get("deliverables_list", "not mentioned in the document")
+#             chunk["location"] = document_metadata.get("location", "Not mentioned in document")
+#             chunk["state"] = document_metadata.get("state", "Not mentioned in document")
+#             chunk["country"] = document_metadata.get("country", "Not mentioned in document")
 #         chunks.append(chunk)
 #         print(f"DEBUG: Total chunks created: {len(chunks)}")
 #         return chunks
@@ -50,9 +56,6 @@
 #             prepared_date = document_metadata.get('prepared_date', '')
 #             if not prepared_date:
 #                 prepared_date = datetime.now().strftime('%Y-%m-%d')  # Current date as fallback
-            
-#             # Components - ENHANCED: Extract all components with specific fields from metadata
-#             components = document_metadata.get('components', {})
 
 #             field_type = document_metadata.get('field_type', '')
 #             if not field_type:
@@ -62,7 +65,21 @@
 #             if not voltage_class:
 #                 voltage_class = 'Distribution (120 V - 34.5 kV)'  # Default fallback
 
+#             contract_types = document_metadata.get('contract_types', '')
+#             if not contract_types:
+#                 contract_types = 'Fixed Price'  # Default fallback
+
+#             pricing = document_metadata.get('pricing', '')
+#             if not pricing:
+#                 pricing = "null"  # Default fallback
             
+#             # Components - ENHANCED: Extract all components with specific fields from metadata
+#             components = document_metadata.get('components', {})
+
+#             deliverables_list = document_metadata.get('deliverables_list', 'not mentioned in the document')
+#             location = document_metadata.get('location', 'Not mentioned in document')
+#             state = document_metadata.get('state', 'Not mentioned in document')
+#             country = document_metadata.get('country', 'Not mentioned in document')
 #         else:
 #             # Default values when no metadata is available
 #             project_name = ''
@@ -70,9 +87,15 @@
 #             region = 'canada'
 #             industry = 'power_energy'
 #             prepared_date = datetime.now().strftime('%Y-%m-%d')
-#             components = {}
 #             field_type = 'Brown Field'
 #             voltage_class = 'Distribution (120 V - 34.5 kV)'
+#             contract_types = 'Fixed Price' 
+#             pricing = '3.5M USD' 
+#             components = {}
+#             deliverables_list = 'not mentioned in the document'
+#             location = 'Not mentioned in document'
+#             state = 'Not mentioned in document'
+#             country = 'Not mentioned in document'
 
         
 #         # Create chunk structure with enhanced component format (now includes component-specific fields)
@@ -84,11 +107,16 @@
 #             'content_type': 'text',
 #             "client": client,
 #             "region": region,
-#             "industry": industry,
+#             "location": location,
+#             "state": state,
+#             "country": country,
 #             "prepared_date": prepared_date,
-#             "components": components, # ENHANCED: Store entire components structure with specific fields
 #             "field_type" : field_type,
-#             "voltage_class":voltage_class
+#             "voltage_class":voltage_class,
+#             "contract_types":contract_types,
+#             "pricing":pricing,
+#             "deliverables_list": deliverables_list,
+#             "components": components # ENHANCED: Store entire components structure with specific fields
 #         }
 #         return chunk
 
@@ -117,6 +145,8 @@
 #             print(f"   Prepared Date: {chunk.get('prepared_date', 'N/A')}")
 #             print(f"   Field Type: {chunk.get('field_type', 'N/A')}")
 #             print(f"   Voltage Class: {chunk.get('voltage_class', 'N/A')}")
+#             print(f"   Contract Types: {chunk.get('contract_types', 'N/A')}")
+#             print(f"   Pricing: {chunk.get('pricing', 'N/A')}")
 #             # print(f"   Components: {chunk.get('components', 'N/A')}")
            
 
@@ -257,6 +287,12 @@ class SimpleChunkerRFI:
         
         chunks = []
         chunk = self._create_chunk_for_RFI(document_metadata, project_id)
+        # Add deliverables_list, location, state, country to chunk if present in metadata
+        if document_metadata:
+            chunk["deliverables_list"] = document_metadata.get("deliverables_list", "not mentioned in the document")
+            chunk["location"] = document_metadata.get("location", "Not mentioned in document")
+            chunk["state"] = document_metadata.get("state", "Not mentioned in document")
+            chunk["country"] = document_metadata.get("country", "Not mentioned in document")
         chunks.append(chunk)
         print(f"DEBUG: Total chunks created: {len(chunks)}")
         return chunks
@@ -305,9 +341,10 @@ class SimpleChunkerRFI:
             # Components - ENHANCED: Extract all components with specific fields from metadata
             components = document_metadata.get('components', {})
 
-
-
-            
+            deliverables_list = document_metadata.get('deliverables_list', 'not mentioned in the document')
+            location = document_metadata.get('location', 'Not mentioned in document')
+            state = document_metadata.get('state', 'Not mentioned in document')
+            country = document_metadata.get('country', 'Not mentioned in document')
         else:
             # Default values when no metadata is available
             project_name = ''
@@ -320,7 +357,10 @@ class SimpleChunkerRFI:
             contract_types = 'Fixed Price' 
             pricing = '3.5M USD' 
             components = {}
-
+            deliverables_list = 'not mentioned in the document'
+            location = 'Not mentioned in document'
+            state = 'Not mentioned in document'
+            country = 'Not mentioned in document'
 
         
         # Create chunk structure with enhanced component format (now includes component-specific fields)
@@ -332,12 +372,15 @@ class SimpleChunkerRFI:
             'content_type': 'text',
             "client": client,
             "region": region,
-            "industry": industry,
+            "location": location,
+            "state": state,
+            "country": country,
             "prepared_date": prepared_date,
             "field_type" : field_type,
             "voltage_class":voltage_class,
             "contract_types":contract_types,
             "pricing":pricing,
+            "deliverables_list": deliverables_list,
             "components": components # ENHANCED: Store entire components structure with specific fields
         }
         return chunk
@@ -370,6 +413,12 @@ class SimpleChunkerRFI:
             print(f"   Contract Types: {chunk.get('contract_types', 'N/A')}")
             print(f"   Pricing: {chunk.get('pricing', 'N/A')}")
             # print(f"   Components: {chunk.get('components', 'N/A')}")
+            print(f"   Location: {chunk.get('location', 'N/A')}")
+            print(f"   State: {chunk.get('state', 'N/A')}")
+            print(f"   Country: {chunk.get('country', 'N/A')}")
+            deliverables = chunk.get('deliverables_list', '')
+            deliverables_preview = ' '.join(deliverables.split()[:100])
+            print(f"   Deliverables List (first 100 words): {deliverables_preview}")
            
 
             # ENHANCED: Display components structure with specific fields
@@ -378,17 +427,25 @@ class SimpleChunkerRFI:
                 print(f"   Components Found: {len(components)} component(s)")
                 for comp_code, comp_data in components.items():
                     print(f"      • {comp_code} Component:")
+                    
+                    # Show common fields
                     scope_len = len(comp_data.get('scope_of_work', ''))
                     activities_len = len(comp_data.get('required_activities', ''))
                     print(f"        - Scope of Work: {scope_len} chars")
                     print(f"        - Required Activities: {activities_len} chars")
+                    
+                    # Show component-specific fields
                     for field_name, field_value in comp_data.items():
                         if field_name not in ['scope_of_work', 'required_activities']:
                             field_preview = field_value[:50] + "..." if len(field_value) > 50 else field_value
                             print(f"        - {field_name}: {field_preview}")
             else:
                 print(f"   Components: No components identified")
-            print(f"{'='*80}")
+
+#             # print(f"   Field Type : {chunk.get('field_type', 'N/A')}")
+#             # print(f"   Voltage Class: {chunk.get('voltage_class', 'N/A')}")
+            
+#             print(f"{'='*80}")
     
     def debug_text_analysis(self, text: str):
         """Debug method to analyze the input text"""
@@ -397,16 +454,25 @@ class SimpleChunkerRFI:
         print(f"{'='*60}")
         print(f"Total text length: {len(text)} characters")
         print(f"Total lines: {len(text.split(chr(10)))}")
+        
+        # Check for section headings
         section_headings = re.findall(self.section_patterns['section_heading'], text)
         print(f"Section headings found: {len(section_headings)}")
+        
+        # Check for numbered sections
         numbered_sections = re.findall(self.section_patterns['numbered_section'], text, re.MULTILINE)
         print(f"Numbered sections found: {len(numbered_sections)}")
+        
+        # Show some examples
         print("\nFirst 500 characters:")
         print(repr(text[:500]))
+        
         print("\nLast 500 characters:")
         print(repr(text[-500:]))
+        
         if section_headings:
             print(f"\nSection heading examples: {section_headings[:3]}")
+        
         if numbered_sections:
             print(f"\nNumbered section examples: {numbered_sections[:3]}")
 

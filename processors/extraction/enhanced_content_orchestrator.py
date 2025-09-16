@@ -206,10 +206,9 @@ class ContentExtractor:
                         # print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
                         # Upload to Azure AI Search RFI index
                         #print(f"📤 Uploading RFI data to Azure AI Search RFI index...")
-                        self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)
+                        # self.data_indexing_RFP_request.upload_chunks_from_dict(chunk_data)  # <-- COMMENTED OUT INDEXING
                         #print(f"✅ RFI data successfully uploaded to Azure AI Search RFI index")
                     else:
-                        #print("❌ Failed to prepare RFI chunk data for indexing")
                         print()
                 else:
                     #print(f"💾 Saving RFP text chunks to storage...")
@@ -220,10 +219,9 @@ class ContentExtractor:
                         # print(f"   🎯 Processing method: {chunk_data.get('processing_method', 'N/A')}")
                         # Upload to Azure AI Search RFP index
                         #print(f"📤 Uploading RFP data to Azure AI Search RFP index...")
-                        self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)
+                        # self.data_indexing_RFP_response.upload_chunks_from_dict(chunk_data)  # <-- COMMENTED OUT INDEXING
                         #print(f"✅ RFP data successfully uploaded to Azure AI Search RFP index")
                     else:
-                        #print("❌ Failed to prepare RFP chunk data for indexing")
                         print()
 
             # Save raw text content to storage
@@ -295,7 +293,7 @@ class ContentExtractor:
                 print()
             component_data_success = False
             if self.document_type == "RFI":
-                print(f"Storing RFI component data in ComponentData...")
+                print(f"Storing RFI component data in ComponentDataV1...")
                 # Only push the components present in the current chunk
                 if self.text_chunks:
                     for chunk in self.text_chunks:
@@ -308,28 +306,27 @@ class ContentExtractor:
                                 "content_type": chunk.get("content_type", "text"),
                                 "client": chunk.get("client", ""),
                                 "region": chunk.get("region", ""),
-                                "industry": chunk.get("industry", ""),
+                                "location": chunk.get("location", ""),
+                                "state": chunk.get("state", ""),
+                                "country": chunk.get("country", ""),
                                 "prepared_date": chunk.get("prepared_date", ""),
                                 "field_type": chunk.get("field_type", ""),
                                 "voltage_class": chunk.get("voltage_class", ""),
                                 "contract_types": chunk.get("contract_types", ""),
                                 "pricing": chunk.get("pricing", ""),
+                                "deliverables_list": chunk.get("deliverables_list", ""),
                                 "components": components
                             }
-                            component_entity_keys = self.table_handler.store_component_data(component_data_dict, "ComponentData")
+                            component_entity_keys = self.table_handler.store_component_data(component_data_dict, "ComponentDataV1")
                             if component_entity_keys:
-                                #print(f"✅ Component data stored successfully: {len(component_entity_keys)} component records for chunk {chunk.get('chunk_id', '')}")
                                 component_data_success = True
                             else:
-                                #print(f"❌ Failed to store component data for chunk {chunk.get('chunk_id', '')}")
                                 print()
                         else:
-                            #print(f"❌ No valid components found in chunk for ComponentData table: {chunk.get('chunk_id', '')}")
                             print()
                     if not component_data_success:
                         component_data_success = True  # No valid components in any chunk is considered success
                 else:
-                    #print(f"❌ No text chunks available for component data storage")
                     component_data_success = True
             elif self.document_type == "RFP":
                 #print(f"ℹ️ RFP document - skipping component data storage")

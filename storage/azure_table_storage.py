@@ -199,6 +199,12 @@ class AzureTableMetadataHandler:
             # Get components data
             components = data.get('components', {})
             
+            # Add support for deliverables_list and new location fields
+            deliverables_list = data.get('deliverables_list', '') if table_name == "ComponentDataV1" else None
+            location = data.get('location', '') if table_name == "ComponentDataV1" else None
+            state = data.get('state', '') if table_name == "ComponentDataV1" else None
+            country = data.get('country', '') if table_name == "ComponentDataV1" else None
+            
             entity_keys = []
             
             # Process each component
@@ -251,6 +257,13 @@ class AzureTableMetadataHandler:
                 elif component_name == 'STE':  # New component type - Site Preparation
                     entity['GradingAndRoads'] = self._sanitize_for_azure(component_data.get('grading_and_roads', ''))
                     entity['DrainageAndWaterManagement'] = self._sanitize_for_azure(component_data.get('drainage_and_water_management', ''))
+                
+                # Add new fields for ComponentDataV1
+                if table_name == "ComponentDataV1":
+                    entity['DeliverablesList'] = self._sanitize_for_azure(deliverables_list)
+                    entity['Location'] = self._sanitize_for_azure(location)
+                    entity['State'] = self._sanitize_for_azure(state)
+                    entity['Country'] = self._sanitize_for_azure(country)
                 
                 # Store additional component data as JSON if any other fields exist
                 other_fields = {k: v for k, v in component_data.items() if k not in [
