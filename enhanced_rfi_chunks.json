@@ -1,0 +1,65 @@
+[
+  {
+    "chunk_id": "59c88191",
+    "project_id": "proj_705-22295407_00-B&M_HONI_RFP-Chatham_SS_docx",
+    "file_name": "705-22295407.00-B&M_HONI RFP-Chatham SS.docx",
+    "content_type": "document",
+    "created_at": "2025-09-12T00:15:08.407371",
+    "project_name": "",
+    "client": "Hydro One Networks Inc.",
+    "industry": "Power & Energy",
+    "region": "Ontario, Canada",
+    "prepared_date": "2021-10-06",
+    "field_type": "Brown Field",
+    "voltage_class": "Transmission (115–230 kV)",
+    "contract_types": "Not mentioned in the document",
+    "pricing": "Not mentioned in the document",
+    "components": {
+      "ELE": {
+        "scope_of_work": "The electrical scope involves the expansion of the 230kV yard at Chatham SS, installation of new circuit breakers, disconnect switches, transformers, relay buildings, and cable trenches. At Lakeshore TS, it includes installation of line disconnect switches, CVTs, and associated electrical equipment.",
+        "required_activities": "Install three 3000A SF6 circuit breakers, six 230kV disconnect switches, two 2000A line disconnect switches with grounding switches, and six CVTs at Chatham SS. Install two 230kV line disconnect switches with grounding switches and six CVTs at Lakeshore TS. Expand the 230kV yard and install transformers, relay buildings, and cable trenches.",
+        "disconnect_switches": "230kV line disconnect switches with grounding switches",
+        "transformer": "150kVA, 600V-120/208V pad-mounted transformers"
+      },
+      "FND": {
+        "scope_of_work": "The foundation scope includes constructing foundations for 230kV SF6 breakers, disconnect switches, bus supports, CVT supports, and transformers at Chatham SS. It also involves customized foundations for AC panels and road crossings.",
+        "required_activities": "Construct foundations for three 230kV SF6 breakers, nine towers, six CVT supports, and eight bus supports. Install precast vaults for transformers and customized foundations for AC panels. Ensure compliance with Hydro One standards and address soil bearing capacity issues.",
+        "transformer_foundations": "Precast vaults for ACSS transformers 533T13/533T14",
+        "equipment_support_foundations": "Foundations for 230kV SF6 breakers and disconnect switches"
+      },
+      "CNT": {
+        "scope_of_work": "The control scope involves designing and installing SCADA infrastructure, control circuits, and LAN systems for new and existing relay buildings. It includes interfacing new protections with existing systems and ensuring compliance with Hydro One standards.",
+        "required_activities": "Expand the 230kV BES LAN, install dual-node Axion RTUs, configure SCADA devices, and integrate new protections with existing systems. Provide control design packages, update NMS lists, and ensure compliance with Hydro One and NERC standards.",
+        "control_design_packages": "Provide complete control design package as per latest BES standard",
+        "SCADA_infrastructure": "Install new SCADA infrastructure at control buildings"
+      },
+      "TEL": {
+        "scope_of_work": "The telecom scope includes designing and installing new OPGW, inter-building fiber cables, and station LAN networks. It also involves relocating existing telecom infrastructure and ensuring compliance with NERC CIP standards.",
+        "required_activities": "Install new 96F OPGW, inter-building fiber cables, and copper cables. Relocate Bell Canada cables and security fiber infrastructure. Configure BES LAN switches, clocks, and SCADA interfaces. Ensure compliance with Hydro One telecom standards.",
+        "station_lan_networks": "Design and install new BES station LAN for 230kV and 115kV systems",
+        "scada_and_transport_infrastructure": "Configure local and remote routers to provide direct SCADA connectivity"
+      },
+      "PRT": {
+        "scope_of_work": "The protection scope involves designing and installing protections for new 230kV lines, circuit breakers, and transformers. It includes integrating new protections with existing systems and ensuring compliance with Hydro One standards.",
+        "required_activities": "Install A and B line protections for 3L24 and 3L26, breaker protections for 3CB24, 3CB26, and 3CB28, and transformer protections. Modify existing protections to accommodate new equipment and integrate with SCADA/RTU systems.",
+        "transformer_protection": "Design and install protections for new 230/28kV transformers 3T1 and 3T2",
+        "breaker_protection": "230kV Circuit Switcher 3DS-MTU for outage staging"
+      },
+      "STE": {
+        "scope_of_work": "The site preparation scope includes grading, road construction, and drainage work at Chatham SS. It involves removing organic material, laying geotextile, and compacting granular material to establish design grades.",
+        "required_activities": "Excavate 15,600 sq. meters of organic soil, lay geotextile, and compact granular material. Construct 255m of service roads, install chain-link fencing with grounding, and provide animal deterrents. Ensure compliance with Hydro One and Ontario standards.",
+        "grading_and_roads": "Provide grading for 15,600 sq. meters and construct 255m of service roads",
+        "drainage_and_water_management": "Provide drainage system as per Hydro One standards"
+      },
+      "STR": {
+        "scope_of_work": "The structural scope includes fabricating and installing steel structures for electrical equipment at Chatham SS. It involves preparing design calculations, fabrication drawings, and galvanizing steel components.",
+        "required_activities": "Fabricate and install steel structures for strain bus supports, breaker platforms, disconnect switches, and CVT supports. Prepare design calculations, conduct tests, and apply galvanizing. Transport and assemble steel components on-site.",
+        "steel_and_station_structures": "Provide structural steel design for PowerCo TS station structures",
+        "transformer_and_equipment_structures": "Design structures for two 230kV transformers with spill containment area"
+      }
+    },
+    "text_elements_count": 776,
+    "total_content_length": 75098,
+    "processing_timestamp": "2025-09-12T00:15:08.407371"
+  }
+]
