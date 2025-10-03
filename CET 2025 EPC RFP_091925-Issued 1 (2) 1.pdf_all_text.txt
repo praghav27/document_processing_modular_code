@@ -1,0 +1,271 @@
+[ParagraphRole.TITLE] RFP FOR STRATEGIC SUPPORT FOR ELECTRIC TRANSMISSION PROJECT DEVELOPMENT AND EXECUTION (PHASE 1)
+
+[ParagraphRole.SECTION_HEADING] Table of Contents
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 1
+
+[ParagraphRole.SECTION_HEADING] 1. Purpose of the RFP
+
+[None] Con Edison Transmission, Inc. (CET) issues this Request for Proposal (RFP) to identify and prequalify strategic firms in the engineering and construction sector who are interested in supporting CET's development of electric transmission projects from origination through project execution and delivery. As noted in Section 9 below, this is Phase 1 of the RFP process, and our intention is to shortlist firms for one or more subsequent rounds of qualifications and/or proposals as we further develop our vision for this procurement and relationship.
+
+[None] Our intention is to engage development teams who will help grow CET's transmission investment portfolio, by enhancing CET's competitiveness in transmission procurements in our target markets. We envision that support would start with preconstruction and/or a teaming approach during early phase project development, including support of planning, scheduling, scoping, engineering, routing, construction, cost estimating and risk analysis. We would also seek support to develop cash flow estimates and operating cost models corresponding to a project milestone schedule. In addition, we seek support in preparing written proposals in response to solicitations in which CET participates.
+
+[None] CET also envisions continuing with selected firms past the project and proposal development phase and into execution phases of selected projects. CET is interested in exploring collaborative risk sharing contracting models, and/or incentive option structures with strategic engineering and construction firms to deliver on selected projects. For instance, if CET develops a proposal with a strategic engineering and construction firm, and the proposal is competitively awarded to CET, we envision continuing with that engineering / construction firm through project execution, in a collaborative contracting model with appropriate risk sharing and/or incentive structures, subject to appropriate parameters to be determined.
+
+[None] We are seeking interest from firms who are willing to team with CET and share in the risk and value of project delivery in this fashion and are asking for input from market players on what options or arrangements might be offered or recommended in exchange for priority opportunities to work with CET to deliver a selected project.
+
+[ParagraphRole.SECTION_HEADING] 2. About CET
+
+[None] CET, a subsidiary of Consolidated Edison, Inc. (CEI), is a transmission development company active in electric transmission development in the New York, PJM and New England markets, with a focus on FERC regulated transmission opportunities, both regionally and inter-regionally. CET expects to be increasingly active in these markets to capture the significant potential for transmission expansion needed to meet increasing demand and new generation supplies.
+
+[None] CET is affiliated with Consolidated Edison Company of New York, Inc. and Orange and Rockland Utilities, Inc. with approximately $15 billion in revenue and $72 billion in assets.
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 2
+
+[ParagraphRole.SECTION_HEADING] 3. RFP Objectives
+
+[None] The primary objectives of this RFP process are to:
+
+[None] 1. Identify qualified firms experienced in transmission infrastructure project development, engineering, procurement and construction, who are interested in teaming with CET to help grow CET's transmission investment portfolio.
+
+[None] 2. Understand each firm's capability in the various stages of proposal development and execution, from origination and planning, through proposal development, as well as execution phases including engineering, project management, equipment manufacture/procurement, construction/installation and commissioning/startup.
+
+[None] 3. Understand each firm's potential ideas and offerings to enhance the competitiveness of our project proposals and the on time/on budget delivery of our projects under collaborative risk sharing or teaming structures (to be determined).
+
+[None] 4. Assess the contributions each firm is prepared to offer, including possible fixed competitive pricing and incentives, in consideration for priority opportunities to deliver a proposed project, if selected.
+
+[None] 5. Establish a shortlist of qualified firms for continued discussions and the next phase of engagement.
+
+[None] 6. Items numbers 3 and 4 are the key proposal elements of this RFP.
+
+[ParagraphRole.SECTION_HEADING] 4. Scope of Services
+
+[None] Please indicate all areas in which your firm is willing to provide services:
+
+[None] A. Origination/Early Development
+
+[None] · Power flow modeling (stability, short circuit etc.)
+
+[None] · Economic benefits analysis
+
+[None] · Site evaluation and route selection
+
+[None] · Environmental/permitting support
+
+[None] · Stakeholder and regulatory engagement
+
+[None] · Constructability reviews
+
+[None] B. Preliminary Engineering and Design
+
+[None] · Transmission line preliminary design
+
+[None] · Substation layout and interconnect feasibility
+
+[None] · Surveying, GIS, and geotechnical scoping
+
+[None] · PLS-CADD, structural, and civil capabilities
+
+[None] C. Cost Estimating and CAPEX Modeling
+
+[None] · Conceptual/Class 5-3 estimates
+
+[None] · Value engineering
+
+[None] · Cost benchmarking and escalation modeling
+
+[None] · Contingency development methodology (AACE or similar)
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 3
+
+[ParagraphRole.SECTION_HEADING] D. Risk and Contingency Analysis
+
+[None] · Development of risk registers and mitigation plans
+
+[None] · Monte Carlo or probabilistic modeling capabilities
+
+[None] · Risk-based contingency estimation
+
+[None] · Experience with complex multi-jurisdictional projects
+
+[ParagraphRole.SECTION_HEADING] E. OPEX and Lifecycle Cost Analysis
+
+[None] · Maintenance and inspection cost forecasting
+
+[None] · Operational risk factors
+
+[None] · Long-term staffing or operations modeling
+
+[ParagraphRole.SECTION_HEADING] F. Schedule Development
+
+[None] · Development schedule support
+
+[None] · Project milestone schedule and Gantt charts
+
+[None] · Project schedule risk and contingency buffers
+
+[None] · Integration with permitting, procurement and construction timelines
+
+[ParagraphRole.SECTION_HEADING] G. Proposal Development
+
+[None] · Drafting, editing, and organizing proposal packages/materials in response to competitive solicitations
+
+[None] · Conducting workshops for proposal development
+
+[None] · Ad-hoc support for branding activities (e.g., logo development, template creation)
+
+[None] · Ongoing support post bid during evaluation period
+
+[None] · Real estate and right of way access and support
+
+[ParagraphRole.SECTION_HEADING] H. Project Award - Transition to Project Execution
+
+[None] Please provide your experience with regard to steps you would take transitioning from an awarded project proposal to an executing transmission project, considering how you would approach the execution organization, the budgeting process, and services you are capable of providing including:
+
+[None] · Owners Engineering services
+
+[None] · Engineering Program Management
+
+[None] · Integrated Engineering, Procurement and Construction
+
+[ParagraphRole.SECTION_HEADING] 5. Contracting Model
+
+[None] CET envisions entering into a pre-construction contract or teaming relationship with the selected firm(s), where:
+
+[None] · The firm contributes defined services or resources during project development.
+
+[None] · The firm receives priority opportunity (or, potentially Right of First Refusal, with appropriate parameters TBD) to support CET in execution if CET is selected and the project advances. (Execution phase services would be provided through contracting relationships TBD.)
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 4
+
+[None] · This structure incentivizes early alignment and co-development, collaboration and risk sharing.
+
+[None] Respondents to address:
+
+[None] · What services or value are you willing to provide during project development?
+
+[None] · Are you willing to formalize this arrangement through a pre-development agreement, teaming arrangement, or term sheet?
+
+[None] · Have you engaged in similar development support models before?
+
+[None] · Which region(s) does your firm have the most experience in, and which region(s) are you most willing to work in?
+
+[ParagraphRole.SECTION_HEADING] 6. Information Requested from Respondents
+
+[None] A. Company Overview
+
+[None] · Legal entity name and structure
+
+[None] · Office locations and coverage
+
+[None] · Years in business
+
+[None] · Safety record and EMR
+
+[None] · Key leadership team for this effort
+
+[None] B. Relevant Experience
+
+[None] . Transmission projects completed in the past 5-10 years
+
+[None] · Design-build, EPC, or progressive fast-track delivery experience
+
+[None] · Specific pre-construction, teaming or development support roles
+
+[None] · References (contact info optional at this stage)
+
+[None] C. Team and Resources
+
+[None] · Key personnel proposed for relationship
+
+[None] · In-house disciplines vs. subcontracted roles
+
+[None] · Available tools, platforms, or IP
+
+[None] D. Teaming Philosophy
+
+[None] · Respondents are encouraged to elaborate on how their proposed structures can enhance the competitiveness of project proposals and mitigate delivery risk
+
+[None] · Approach to long-term teaming and collaboration relationships
+
+[None] · How shared risks and opportunities are developed and managed
+
+[ParagraphRole.SECTION_HEADING] E. Value Proposition in exchange for exclusivity
+
+[None] · Discounted or deferred fees
+
+[None] · In-kind technical support
+
+[None] · Access to proprietary tools or data
+
+[None] · Joint ownership of early deliverables
+
+[None] · Financial support, risk sharing or investment
+
+[None] · Other strategic value adds
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 5
+
+[ParagraphRole.SECTION_HEADING] 7. Optional Attachments
+
+[None] · Previous project case studies
+
+[None] · Sample risk matrix or cost estimate
+
+[ParagraphRole.SECTION_HEADING] 8. Submission Details
+
+[None] · Format:
+
+[None] o Maximum thirty (30) pages relevant to specific experience :unselected:
+
+[None] o Include executive summary :unselected:
+
+[None] o PDF files preferred :unselected:
+
+[None] o File must be under 10 MB if submitted via email. Please notify CET contacts if :unselected: over 10 MB, and accommodations can be made for a secure share portal upload
+
+[None] · Submit questions and responses:
+
+[None] o To: Mallorie Azzolini (Azzolinim@conedtransmission.com) :unselected:
+
+[None] o Copy: Morad Hekmat (hekmatm@conedtransmission.com) :unselected:
+
+[None] · CET reserves the right to modify activities, dates and milestones in the RFP/procurement schedule.
+
+[ParagraphRole.SECTION_HEADING] 9. Next Steps
+
+[None] Following receipt of all responses, CET intends to schedule interviews or clarification calls and possibly request additional details on submittals. Our intent is to shortlist firms for one or more subsequent rounds of qualifications and/or proposals as we further develop our vision for this procurement and relationship. We look forward to shortlisting firms and selecting participating firms by 1Q2026. CET reserves the right to determine in its sole discretion which, if any, Respondents will be shortlisted to move onto subsequent phases.
+
+[None] The anticipated schedule is as follows:
+
+[None] * If interested, please provide your availability for pre-bid meetings on October 1st, 2nd and 3rd by September 24th.
+
+[ParagraphRole.SECTION_HEADING] 10. General Guidelines
+
+[None] The information contained in this document has been prepared solely to assist prospective firms in preparing a proposal in response to this RFP. CET does not purport this information to
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 6
+
+[None] be all-inclusive or to contain all of the information that a responding firm ("Respondents") may need to consider in order to submit a proposal.
+
+[None] Neither CET, its parent, its affiliates nor any of their respective employees, officers, agents or its consultants ("Company Parties") will make, or will be deemed to have made, any current or future representation, promise or warranty, express or implied, as to the accuracy, adequacy, reliability, sufficiency or completeness of the information contained herein, or in any document or information made available to a Respondent, whether or not the aforementioned parties know or should have known of any errors or omissions, or were responsible for its inclusion in, or omission from, the RFP documents.
+
+[None] CET reserves the right: (a) to reject any Respondent submission, (b) to request clarifications or additional information from a Respondent regarding its submission, (c) to revise and/or re-issue this RFP or to revise any requirements of this RFP, (d) to withdraw or cancel this RFP at any time, (e) to extend any deadlines applicable to this RFP, (f) to hold discussions with any Respondent to clarify/correct any deficient responses which do not conform fully with the instructions set forth in this RFP, and/or (g) to implement projects without initiating an RFP process and on topics other than the topic that is the subject of this RFP. By submitting a proposal, Respondent agrees that CET may exercise the foregoing rights at any time, without notice and without any liability to a Respondent or any other party for (i) expenses such Respondent or other party incurred in the preparation of responses to this RFP or (ii) for any other damage or claim brought by Respondent because of such action, nor shall Respondent seek any recourse of any kind against Company Parties because of such action. All costs and expenses associated with the submission of any initial or supplemental response to this RFP shall be borne solely by the applicable Respondent.
+
+[None] This RFP shall not be construed to establish an obligation on the part of CET to enter any agreement, or to serve as a basis for any claim whatsoever for reimbursement of costs for efforts expended by Respondents. Receipt by CET of a response to this RFP confers no rights upon a Respondent, nor any obligations upon CET.
+
+[None] CET shall not be obligated or bound by any responses or by any statements or representations, whether oral or written, that may be made by CET or the Company Parties in connection with this RFP. CET does not make any representation or warranty, and shall not have any liability or responsibility for, the accuracy, reliability, sufficiency, relevance or completeness of any of the information set out in this RFP or any attachments or documents referenced herein or attached hereto or otherwise provided by CET during the RFP process.
+
+[None] Each Respondent shall be liable for all of its costs incurred to prepare, submit, respond to, and discuss its proposal, and for any other activity related thereto. The Company Parties shall not be responsible for any of Respondent's costs. CET will, in its sole discretion and without limitation, evaluate proposals and proceed in any manner Company deems appropriate.
+
+[None] Subject to CET's statement regarding confidentiality in Section 11 below, CET reserves the right, in its sole discretion and without liability, to utilize any or all of the submissions, responses and materials received in connection with this RFP (including any late responses), as CET deems appropriate, for the purpose of evaluating Respondent's proposal and otherwise.
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 7
+
+[ParagraphRole.SECTION_HEADING] 11. Confidentiality
+
+[None] CET recognizes that a Respondent may wish to include information in its response to this RFP that the Respondent considers proprietary, a trade secret, or confidential to the Respondent. If any response or information (initial or supplemental) provided to CET in connection with this RFP includes information considered proprietary, a trade secret or confidential, the Respondent shall identify such information by clearly marking "CONFIDENTIAL" on both the top and bottom of each page that contains such information. CET will deem any such designated information as submitted to the Company and its designees, including any third-party advisors retained by the Company to assist in this RFP evaluation process, as confidential with the express understanding that, subject to any legally mandated disclosure requirements, such designated information will be held in confidence and will not be disclosed or used for any purpose other than the review and evaluation of the applicable response to this RFP or otherwise in connection with any proposal from the Respondent in response to a future RFP, if any, or any resulting contract between CET and the Respondent.
+
+[None] By receiving this RFP, Respondents are deemed to agree to keep confidential all information provided by CET that is marked as such, provided that the foregoing confidentiality obligation shall not apply to any information that CET has previously made generally available to the public or information that must be disclosed pursuant to law.
+
+[ParagraphRole.PAGE_FOOTER] 2025 CET RFP (Phase 1) STRATEGIC EPC SUPPORT 8
